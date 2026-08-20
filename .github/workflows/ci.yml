@@ -26,16 +26,16 @@ jobs:
 
       - name: Kiểm tra Format (Black & Isort)
         run: |
-          black --check backend/
-          isort --check-only backend/
+          black --check md/backend/
+          isort --check-only md/backend/
 
       - name: Linter - Quét lỗi cú pháp (Flake8)
         run: |
-          flake8 backend/ --max-line-length=88
+          flake8 md/backend/ --max-line-length=88
 
       - name: Security Scanner - Quét lỗ hổng (Bandit)
         run: |
-          bandit -r backend/ -ll
+          bandit -r md/backend/ -ll
 
   frontend-checks:
     name: Frontend Code Review (React/JS)
@@ -53,6 +53,6 @@ jobs:
         # Sẽ chạy lệnh kiểm tra trong thư mục frontend
         # Yêu cầu bạn đã cài eslint và prettier trong package.json
         run: |
-          cd frontend
+          cd md/frontend
           npm install
           npm run lint || echo "Vui lòng cấu hình npm run lint trong package.json của frontend"
