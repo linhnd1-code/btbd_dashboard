@@ -1,13 +1,13 @@
-from passlib.context import CryptContext
-from datetime import datetime, timedelta
-from jose import JWTError, jwt
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.orm import Session
 import os
+from datetime import datetime, timedelta
 
 from core.database import get_db
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
 from models.user import User
+from passlib.context import CryptContext
+from sqlalchemy.orm import Session
 
 # Cấu hình băm mật khẩu chuẩn Bcrypt
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -46,7 +46,9 @@ def create_access_token(data: dict):
     return encoded_jwt
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
+def get_current_user(
+    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
+) -> User:
     """Giải mã Bearer Token, trả về User thật đang đăng nhập.
 
     Dùng làm Depends() ở mọi API cần bắt buộc đăng nhập.
@@ -66,13 +68,18 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     except JWTError:
         raise unauthorized
 
-    user = db.query(User).filter(User.email == email, User.is_deleted.is_(False)).first()
+    user = (
+        db.query(User).filter(User.email == email, User.is_deleted.is_(False)).first()
+    )
     if not user:
         raise unauthorized
     if not user.is_active or user.status != "active":
         # Phân biệt rõ 403 (biết danh tính nhưng bị chặn) với 401 (không biết là ai) để Frontend
         # hiển thị đúng thông báo "tài khoản bị khoá/chờ duyệt" thay vì bắt đăng nhập lại vô nghĩa.
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Tài khoản chưa được kích hoạt hoặc đã bị khoá")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tài khoản chưa được kích hoạt hoặc đã bị khoá",
+        )
     return user
 
 

@@ -13,7 +13,6 @@ from datetime import datetime
 
 import openpyxl
 import requests
-
 from core.timezone import now_hanoi
 
 SHEET_ID = "1E_fYmNK3TIEMt3xz7JTwG5kmttz_lKbr8xtWRYTDQOY"
@@ -23,7 +22,13 @@ SHEET_MAINTENANCE_LOG = "Lịch sử Bảo dưỡng - sửa chữa"
 SHEET_VEHICLES = "Data xe"
 SHEET_MAINTENANCE_STATUS = "Data BTBD"
 
-LAST_SYNC_STATUS: dict = {"synced_at": None, "records": None, "vehicles": None, "statuses": None, "error": None}
+LAST_SYNC_STATUS: dict = {
+    "synced_at": None,
+    "records": None,
+    "vehicles": None,
+    "statuses": None,
+    "error": None,
+}
 
 # Ngưỡng tối thiểu để coi 1 lần tải là "hợp lệ" — thấp hơn NHIỀU so với quy mô thật hiện tại
 # (~200 xe, ~3000+ nhật ký) nhưng đủ cao để bắt được trường hợp Google trả về file xlsx
@@ -217,13 +222,18 @@ def sync_from_sheet(db) -> dict:
         vehicles = parse_vehicles(workbook[SHEET_VEHICLES])
         statuses = parse_maintenance_status(workbook[SHEET_MAINTENANCE_STATUS])
 
-        if len(vehicles) >= MIN_EXPECTED_VEHICLES and len(records) >= MIN_EXPECTED_RECORDS:
+        if (
+            len(vehicles) >= MIN_EXPECTED_VEHICLES
+            and len(records) >= MIN_EXPECTED_RECORDS
+        ):
             failure_reason = None
             break
 
         failure_reason = f"vehicles={len(vehicles)}, records={len(records)}"
         if attempt < MAX_FETCH_ATTEMPTS:
-            print(f"[sheet_sync] Lần thử {attempt}/{MAX_FETCH_ATTEMPTS} ra dữ liệu bất thường ít ({failure_reason}) — thử lại sau {RETRY_DELAY_SECONDS}s")
+            print(
+                f"[sheet_sync] Lần thử {attempt}/{MAX_FETCH_ATTEMPTS} ra dữ liệu bất thường ít ({failure_reason}) — thử lại sau {RETRY_DELAY_SECONDS}s"
+            )
             time.sleep(RETRY_DELAY_SECONDS)
 
     if failure_reason:

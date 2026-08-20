@@ -8,7 +8,9 @@ ALLOWED_ROLES = ("admin", "manager", "viewer")
 
 def _check_ghn_domain(email: str) -> str:
     if not email.lower().endswith(ALLOWED_EMAIL_DOMAIN):
-        raise ValueError(f"Chỉ chấp nhận email công ty Giao Hàng Nhanh (đuôi {ALLOWED_EMAIL_DOMAIN})")
+        raise ValueError(
+            f"Chỉ chấp nhận email công ty Giao Hàng Nhanh (đuôi {ALLOWED_EMAIL_DOMAIN})"
+        )
     return email
 
 

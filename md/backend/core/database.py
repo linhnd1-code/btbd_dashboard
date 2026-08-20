@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 # Sử dụng SQLite mặc định để dễ phát triển ban đầu.
 # Lên Production, đổi URL thành "postgresql://user:password@localhost/dbname"
@@ -11,6 +11,7 @@ engine = create_engine(
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
+
 
 # Dependency để tự động lấy kết nối DB cho mỗi API và tự động đóng khi xong
 def get_db():

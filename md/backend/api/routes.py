@@ -3,9 +3,11 @@ from pydantic import BaseModel
 
 router = APIRouter()
 
+
 class HealthResponse(BaseModel):
     status: str
     message: str
+
 
 @router.get("/health", response_model=HealthResponse)
 async def check_health():
@@ -14,5 +16,5 @@ async def check_health():
     """
     return {
         "status": "success",
-        "message": "Hệ thống tổng quan đang hoạt động tốt! Kết nối Backend - Frontend thành công."
+        "message": "Hệ thống tổng quan đang hoạt động tốt! Kết nối Backend - Frontend thành công.",
     }

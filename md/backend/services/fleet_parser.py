@@ -89,12 +89,18 @@ def is_index_row(row: list[str]) -> bool:
     return bool(non_empty) and all(c.isdigit() for c in non_empty)
 
 
-def find_table(tables: list[list[list[str]]], first_header_cell: str, must_contain: str) -> list[list[str]] | None:
+def find_table(
+    tables: list[list[list[str]]], first_header_cell: str, must_contain: str
+) -> list[list[str]] | None:
     for table in tables:
         if not table:
             continue
         header = table[0]
-        if header and header[0] == first_header_cell and any(must_contain in h for h in header):
+        if (
+            header
+            and header[0] == first_header_cell
+            and any(must_contain in h for h in header)
+        ):
             body = table[1:]
             if body and is_index_row(body[0]):
                 body = body[1:]

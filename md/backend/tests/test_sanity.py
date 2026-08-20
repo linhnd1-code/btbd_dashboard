@@ -1,5 +1,3 @@
-import pytest
-
 def test_system_sanity():
     """
     Bài test đầu tiên để đảm bảo CI/CD Pipeline chạy mượt mà.

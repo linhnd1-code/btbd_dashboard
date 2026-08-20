@@ -1,7 +1,9 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from datetime import datetime
+
 from core.database import Base
 from models.base import SoftDeleteMixin
+from sqlalchemy import Boolean, Column, DateTime, Integer, String
+
 
 # Kế thừa SoftDeleteMixin để sở hữu khả năng Xóa Mềm
 class User(Base, SoftDeleteMixin):

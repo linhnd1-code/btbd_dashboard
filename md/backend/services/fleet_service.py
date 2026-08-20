@@ -1,13 +1,12 @@
 from datetime import datetime, timedelta
 
-from sqlalchemy import func
-from sqlalchemy.orm import Session
-
 from core.timezone import now_hanoi
 from models.app_settings import AppSettings
 from models.maintenance_record import MaintenanceRecord
 from models.vehicle import Vehicle
 from models.vehicle_maintenance_status import VehicleMaintenanceStatus
+from sqlalchemy import func
+from sqlalchemy.orm import Session
 
 DOC_EXPIRY_FIELDS = [
     ("inspection_expiry", "Hạn đăng kiểm"),
@@ -63,19 +62,26 @@ def get_fleet_stats(db: Session) -> dict:
     settings = get_settings(db)
     total_vehicles = db.query(func.count(Vehicle.id)).scalar() or 0
     active_vehicles = (
-        db.query(func.count(Vehicle.id)).filter(Vehicle.status == "Hoạt động").scalar() or 0
+        db.query(func.count(Vehicle.id)).filter(Vehicle.status == "Hoạt động").scalar()
+        or 0
     )
     total_records = db.query(func.count(MaintenanceRecord.id)).scalar() or 0
-    total_cost = db.query(func.coalesce(func.sum(MaintenanceRecord.cost), 0)).scalar() or 0
+    total_cost = (
+        db.query(func.coalesce(func.sum(MaintenanceRecord.cost), 0)).scalar() or 0
+    )
 
     compliance_rows = (
         db.query(MaintenanceRecord.compliance_check, func.count(MaintenanceRecord.id))
         .group_by(MaintenanceRecord.compliance_check)
         .all()
     )
-    correct_count = next((c for label, c in compliance_rows if label == "Đúng định mức"), 0)
+    correct_count = next(
+        (c for label, c in compliance_rows if label == "Đúng định mức"), 0
+    )
     checked_total = sum(c for label, c in compliance_rows if label)
-    compliance_rate = round(correct_count / checked_total * 100, 1) if checked_total else 0.0
+    compliance_rate = (
+        round(correct_count / checked_total * 100, 1) if checked_total else 0.0
+    )
 
     due_for_maintenance = (
         db.query(func.count(VehicleMaintenanceStatus.id))
@@ -89,22 +95,34 @@ def get_fleet_stats(db: Session) -> dict:
 
     def _breakdown(column):
         rows = (
-            db.query(column, func.count(MaintenanceRecord.id), func.coalesce(func.sum(MaintenanceRecord.cost), 0))
+            db.query(
+                column,
+                func.count(MaintenanceRecord.id),
+                func.coalesce(func.sum(MaintenanceRecord.cost), 0),
+            )
             .filter(column.isnot(None))
             .group_by(column)
             .order_by(func.sum(MaintenanceRecord.cost).desc())
             .all()
         )
-        return [{"label": label, "count": count, "total_cost": cost} for label, count, cost in rows]
+        return [
+            {"label": label, "count": count, "total_cost": cost}
+            for label, count, cost in rows
+        ]
 
     cost_by_area = _breakdown(MaintenanceRecord.area)
     cost_by_garage = _breakdown(MaintenanceRecord.garage)
-    records_by_week = sorted(_breakdown(MaintenanceRecord.week), key=lambda r: r["label"])
+    records_by_week = sorted(
+        _breakdown(MaintenanceRecord.week), key=lambda r: r["label"]
+    )
     compliance_breakdown = [
-        {"label": label or "Chưa kiểm tra", "count": count, "total_cost": 0} for label, count in compliance_rows
+        {"label": label or "Chưa kiểm tra", "count": count, "total_cost": 0}
+        for label, count in compliance_rows
     ]
 
-    expiring_documents = _count_expiring_documents(db, settings.expiry_alert_window_days)
+    expiring_documents = _count_expiring_documents(
+        db, settings.expiry_alert_window_days
+    )
 
     return {
         "total_vehicles": total_vehicles,
@@ -160,7 +178,10 @@ def get_maintenance_records(
 
 
 def get_vehicles(
-    db: Session, status: str | None = None, brand: str | None = None, search: str | None = None
+    db: Session,
+    status: str | None = None,
+    brand: str | None = None,
+    search: str | None = None,
 ) -> list[Vehicle]:
     query = db.query(Vehicle)
     if status:
@@ -209,10 +230,14 @@ def get_all_documents(db: Session, doc_type: str | None = None) -> list[dict]:
     return rows
 
 
-def _schedule_status(remaining_odo: int | None, alert_status: str | None, due_km: int, upcoming_km: int) -> str:
+def _schedule_status(
+    remaining_odo: int | None, alert_status: str | None, due_km: int, upcoming_km: int
+) -> str:
     if remaining_odo is not None and remaining_odo < 0:
         return "overdue"
-    if alert_status == "Đến kỳ BD" or (remaining_odo is not None and remaining_odo <= due_km):
+    if alert_status == "Đến kỳ BD" or (
+        remaining_odo is not None and remaining_odo <= due_km
+    ):
         return "due"
     if remaining_odo is not None and remaining_odo <= upcoming_km:
         return "upcoming"
@@ -233,7 +258,10 @@ def get_maintenance_schedule(db: Session) -> list[dict]:
             "remaining_odo": r.remaining_odo,
             "alert_status": r.alert_status,
             "schedule_status": _schedule_status(
-                r.remaining_odo, r.alert_status, settings.due_threshold_km, settings.upcoming_threshold_km
+                r.remaining_odo,
+                r.alert_status,
+                settings.due_threshold_km,
+                settings.upcoming_threshold_km,
             ),
             "note": r.note,
         }
@@ -248,12 +276,18 @@ def get_vehicle_lookup(db: Session, plate_number: str) -> dict | None:
     vehicle = db.query(Vehicle).filter(Vehicle.plate_number == plate_number).first()
     if not vehicle and len(plate_number) >= 4:
         # Cho phép tra cứu bằng vài số cuối của biển số, không chỉ khớp tuyệt đối.
-        matches = db.query(Vehicle).filter(Vehicle.plate_number.ilike(f"%{plate_number}")).all()
+        matches = (
+            db.query(Vehicle)
+            .filter(Vehicle.plate_number.ilike(f"%{plate_number}"))
+            .all()
+        )
         if len(matches) == 1:
             vehicle = matches[0]
         elif len(matches) > 1:
             plates = ", ".join(m.plate_number for m in matches[:8])
-            raise ValueError(f"Có {len(matches)} biển số khớp với '{plate_number}': {plates} — vui lòng nhập đầy đủ hơn hoặc chọn từ gợi ý")
+            raise ValueError(
+                f"Có {len(matches)} biển số khớp với '{plate_number}': {plates} — vui lòng nhập đầy đủ hơn hoặc chọn từ gợi ý"
+            )
     if not vehicle:
         return None
 
@@ -292,7 +326,10 @@ def get_vehicle_lookup(db: Session, plate_number: str) -> dict | None:
             "remaining_odo": status_row.remaining_odo,
             "alert_status": status_row.alert_status,
             "schedule_status": _schedule_status(
-                status_row.remaining_odo, status_row.alert_status, settings.due_threshold_km, settings.upcoming_threshold_km
+                status_row.remaining_odo,
+                status_row.alert_status,
+                settings.due_threshold_km,
+                settings.upcoming_threshold_km,
             ),
             "note": status_row.note,
         }
@@ -339,7 +376,9 @@ def get_fleet_alerts(db: Session, limit: int = 20) -> dict:
                         "days_remaining": days,
                     }
                 )
-    document_expiring.sort(key=lambda d: (d["days_remaining"] is None, d["days_remaining"]))
+    document_expiring.sort(
+        key=lambda d: (d["days_remaining"] is None, d["days_remaining"])
+    )
 
     return {
         "maintenance_due": maintenance_due,
@@ -362,7 +401,10 @@ def get_health_scores(db: Session) -> list[dict]:
     by_plate: dict[str, list[MaintenanceRecord]] = {}
     for r in records:
         by_plate.setdefault(r.plate_number, []).append(r)
-    repair_counts = [sum(1 for r in recs if r.work_type and "Sửa chữa" in r.work_type) for recs in by_plate.values()]
+    repair_counts = [
+        sum(1 for r in recs if r.work_type and "Sửa chữa" in r.work_type)
+        for recs in by_plate.values()
+    ]
     avg_repairs = (sum(repair_counts) / len(repair_counts)) if repair_counts else 0
 
     results = []
@@ -370,16 +412,26 @@ def get_health_scores(db: Session) -> list[dict]:
         recs = by_plate.get(vehicle.plate_number, [])
         checked = [r for r in recs if r.compliance_check]
         compliance_score = (
-            100 * sum(1 for r in checked if r.compliance_check == "Đúng định mức") / len(checked)
+            100
+            * sum(1 for r in checked if r.compliance_check == "Đúng định mức")
+            / len(checked)
             if checked
             else 80.0
         )
 
         repair_count = sum(1 for r in recs if r.work_type and "Sửa chữa" in r.work_type)
-        freq_score = 100.0 if avg_repairs == 0 else max(0.0, min(100.0, 100 - (repair_count - avg_repairs) * 15))
+        freq_score = (
+            100.0
+            if avg_repairs == 0
+            else max(0.0, min(100.0, 100 - (repair_count - avg_repairs) * 15))
+        )
 
         schedule = schedules.get(vehicle.plate_number)
-        if schedule and schedule.remaining_odo is not None and schedule.remaining_odo < 0:
+        if (
+            schedule
+            and schedule.remaining_odo is not None
+            and schedule.remaining_odo < 0
+        ):
             bd_score = max(0.0, 100 + schedule.remaining_odo / 100)
         else:
             bd_score = 100.0
@@ -392,7 +444,12 @@ def get_health_scores(db: Session) -> list[dict]:
                 break
         doc_score = 40.0 if doc_issue else 100.0
 
-        score = round(compliance_score * 0.40 + freq_score * 0.25 + bd_score * 0.20 + doc_score * 0.15)
+        score = round(
+            compliance_score * 0.40
+            + freq_score * 0.25
+            + bd_score * 0.20
+            + doc_score * 0.15
+        )
         score = max(0, min(100, score))
         results.append(
             {
@@ -415,7 +472,6 @@ def get_health_scores(db: Session) -> list[dict]:
 
 # ── Cảnh báo tổng hợp (rule-based, KHÔNG phải AI/machine learning) ──
 def get_smart_alerts(db: Session) -> list[dict]:
-    settings = get_settings(db)
     records = db.query(MaintenanceRecord).all()
     by_plate: dict[str, list[MaintenanceRecord]] = {}
     for r in records:
@@ -462,8 +518,10 @@ def get_smart_alerts(db: Session) -> list[dict]:
     vehicles = db.query(Vehicle).all()
     for vehicle in vehicles:
         expired_docs = [
-            label for field_name, label in DOC_EXPIRY_FIELDS
-            if (d := _days_remaining(getattr(vehicle, field_name))) is not None and d < 0
+            label
+            for field_name, label in DOC_EXPIRY_FIELDS
+            if (d := _days_remaining(getattr(vehicle, field_name))) is not None
+            and d < 0
         ]
         if len(expired_docs) >= 2:
             alerts.append(
@@ -493,15 +551,26 @@ def get_roadside_incidents(db: Session) -> list[MaintenanceRecord]:
 
 
 def get_reports(db: Session, period: str = "week") -> list[dict]:
-    column = MaintenanceRecord.week if period == "week" else func.strftime("%Y-%m", MaintenanceRecord.entry_date)
+    column = (
+        MaintenanceRecord.week
+        if period == "week"
+        else func.strftime("%Y-%m", MaintenanceRecord.entry_date)
+    )
     rows = (
-        db.query(column.label("period"), func.count(MaintenanceRecord.id), func.coalesce(func.sum(MaintenanceRecord.cost), 0))
+        db.query(
+            column.label("period"),
+            func.count(MaintenanceRecord.id),
+            func.coalesce(func.sum(MaintenanceRecord.cost), 0),
+        )
         .filter(column.isnot(None))
         .group_by("period")
         .order_by("period")
         .all()
     )
-    return [{"label": label, "count": count, "total_cost": cost} for label, count, cost in rows]
+    return [
+        {"label": label, "count": count, "total_cost": cost}
+        for label, count, cost in rows
+    ]
 
 
 def create_maintenance_record(db: Session, data: dict) -> MaintenanceRecord:
@@ -517,7 +586,12 @@ def _month_key(dt) -> str | None:
 
 
 OVERVIEW_CATEGORIES = ["Bảo dưỡng", "Sửa chữa", "Thay lốp"]
-CATEGORY_COLORS = {"Bảo dưỡng": "#3b82f6", "Sửa chữa": "#e5484d", "Thay lốp": "#f59e0b", "Khác": "#8a5cf6"}
+CATEGORY_COLORS = {
+    "Bảo dưỡng": "#3b82f6",
+    "Sửa chữa": "#e5484d",
+    "Thay lốp": "#f59e0b",
+    "Khác": "#8a5cf6",
+}
 
 
 def get_overview_extra(db: Session) -> dict:
@@ -528,9 +602,15 @@ def get_overview_extra(db: Session) -> dict:
 
     records = db.query(MaintenanceRecord).all()
 
-    cost_this_week = sum(r.cost or 0 for r in records if r.entry_date and r.entry_date >= week_start)
-    cost_this_month = sum(r.cost or 0 for r in records if r.entry_date and r.entry_date >= month_start)
-    cost_this_year = sum(r.cost or 0 for r in records if r.entry_date and r.entry_date >= year_start)
+    cost_this_week = sum(
+        r.cost or 0 for r in records if r.entry_date and r.entry_date >= week_start
+    )
+    cost_this_month = sum(
+        r.cost or 0 for r in records if r.entry_date and r.entry_date >= month_start
+    )
+    cost_this_year = sum(
+        r.cost or 0 for r in records if r.entry_date and r.entry_date >= year_start
+    )
 
     monthly_stack: dict[str, dict] = {}
     monthly_odo: dict[str, int] = {}
@@ -538,7 +618,9 @@ def get_overview_extra(db: Session) -> dict:
         month = _month_key(r.entry_date)
         if not month:
             continue
-        bucket = monthly_stack.setdefault(month, {c: 0 for c in OVERVIEW_CATEGORIES + ["Khác"]})
+        bucket = monthly_stack.setdefault(
+            month, {c: 0 for c in OVERVIEW_CATEGORIES + ["Khác"]}
+        )
         types = [t.strip() for t in (r.work_type or "").split(",") if t.strip()]
         matched = [c for c in OVERVIEW_CATEGORIES if c in types]
         cost_share = (r.cost or 0) / len(matched) if matched else (r.cost or 0)
@@ -551,11 +633,21 @@ def get_overview_extra(db: Session) -> dict:
 
     months = sorted(monthly_stack.keys())
     monthly_category_stack = [
-        {"label": m, "parts": [round(monthly_stack[m][c]) for c in OVERVIEW_CATEGORIES + ["Khác"]]} for m in months
+        {
+            "label": m,
+            "parts": [
+                round(monthly_stack[m][c]) for c in OVERVIEW_CATEGORIES + ["Khác"]
+            ],
+        }
+        for m in months
     ]
     monthly_odo_sum = [{"label": m, "value": monthly_odo[m]} for m in months]
 
-    health_buckets = {"Khỏe mạnh (≥80)": 0, "Cần theo dõi (50-79)": 0, "Nguy cơ hỏng hóc (<50)": 0}
+    health_buckets = {
+        "Khỏe mạnh (≥80)": 0,
+        "Cần theo dõi (50-79)": 0,
+        "Nguy cơ hỏng hóc (<50)": 0,
+    }
     for row in get_health_scores(db):
         if row["score"] >= 80:
             health_buckets["Khỏe mạnh (≥80)"] += 1
@@ -577,7 +669,11 @@ def get_overview_extra(db: Session) -> dict:
 
 
 def get_maintenance_track(db: Session) -> dict:
-    records = [r for r in db.query(MaintenanceRecord).all() if r.work_type and "Bảo dưỡng" in r.work_type]
+    records = [
+        r
+        for r in db.query(MaintenanceRecord).all()
+        if r.work_type and "Bảo dưỡng" in r.work_type
+    ]
     schedules = db.query(VehicleMaintenanceStatus).all()
 
     compliance_rows = {}
@@ -588,7 +684,9 @@ def get_maintenance_track(db: Session) -> dict:
         month = _month_key(r.entry_date)
         if not month:
             continue
-        bucket = monthly.setdefault(month, {"count": 0, "cost": 0, "on_time": 0, "checked": 0})
+        bucket = monthly.setdefault(
+            month, {"count": 0, "cost": 0, "on_time": 0, "checked": 0}
+        )
         bucket["count"] += 1
         bucket["cost"] += r.cost or 0
         if r.compliance_check:
@@ -598,7 +696,15 @@ def get_maintenance_track(db: Session) -> dict:
 
     months = sorted(monthly.keys())
     monthly_trend = [
-        {"label": m, "on_time_rate": round(monthly[m]["on_time"] / monthly[m]["checked"] * 100, 1) if monthly[m]["checked"] else 0, "count": monthly[m]["count"]}
+        {
+            "label": m,
+            "on_time_rate": (
+                round(monthly[m]["on_time"] / monthly[m]["checked"] * 100, 1)
+                if monthly[m]["checked"]
+                else 0
+            ),
+            "count": monthly[m]["count"],
+        }
         for m in months
     ]
     monthly_cost = [{"label": m, "value": monthly[m]["cost"]} for m in months]
@@ -611,7 +717,9 @@ def get_maintenance_track(db: Session) -> dict:
                 continue
             key = key_fn(s) or "Không rõ"
             buckets.setdefault(key, []).append(s.remaining_odo)
-        rows = [{"label": k, "value": round(sum(v) / len(v))} for k, v in buckets.items()]
+        rows = [
+            {"label": k, "value": round(sum(v) / len(v))} for k, v in buckets.items()
+        ]
         rows.sort(key=lambda r: r["value"])
         return rows
 
@@ -627,7 +735,12 @@ def get_maintenance_track(db: Session) -> dict:
             "plate_number": s.plate_number,
             "manager_unit": s.manager_unit,
             "remaining_odo": s.remaining_odo,
-            "schedule_status": _schedule_status(s.remaining_odo, s.alert_status, get_settings(db).due_threshold_km, get_settings(db).upcoming_threshold_km),
+            "schedule_status": _schedule_status(
+                s.remaining_odo,
+                s.alert_status,
+                get_settings(db).due_threshold_km,
+                get_settings(db).upcoming_threshold_km,
+            ),
         }
 
     return {
@@ -643,7 +756,11 @@ def get_maintenance_track(db: Session) -> dict:
 
 
 def get_repair_track(db: Session) -> dict:
-    records = [r for r in db.query(MaintenanceRecord).all() if r.work_type and "Sửa chữa" in r.work_type]
+    records = [
+        r
+        for r in db.query(MaintenanceRecord).all()
+        if r.work_type and "Sửa chữa" in r.work_type
+    ]
     vehicles_by_plate = {v.plate_number: v for v in db.query(Vehicle).all()}
 
     by_dept: dict[str, int] = {}
@@ -679,23 +796,43 @@ def get_repair_track(db: Session) -> dict:
 
     months = sorted(monthly_cost.keys())
 
-    top_cost_list = sorted(by_plate.items(), key=lambda kv: kv[1]["cost"], reverse=True)[:20]
-    top_freq_list = sorted(by_plate.items(), key=lambda kv: kv[1]["count"], reverse=True)[:20]
+    top_cost_list = sorted(
+        by_plate.items(), key=lambda kv: kv[1]["cost"], reverse=True
+    )[:20]
+    top_freq_list = sorted(
+        by_plate.items(), key=lambda kv: kv[1]["count"], reverse=True
+    )[:20]
 
     return {
         "total_records": len(records),
         "total_cost": sum(r.cost or 0 for r in records),
         "distinct_vehicles": len(by_plate),
-        "cost_by_dept": [{"label": k, "value": v} for k, v in sorted(by_dept.items(), key=lambda kv: kv[1], reverse=True)],
-        "cost_by_brand": [{"label": k, "value": v} for k, v in sorted(by_brand.items(), key=lambda kv: kv[1], reverse=True)],
+        "cost_by_dept": [
+            {"label": k, "value": v}
+            for k, v in sorted(by_dept.items(), key=lambda kv: kv[1], reverse=True)
+        ],
+        "cost_by_brand": [
+            {"label": k, "value": v}
+            for k, v in sorted(by_brand.items(), key=lambda kv: kv[1], reverse=True)
+        ],
         "monthly_cost": [{"label": m, "value": monthly_cost[m]} for m in months],
-        "monthly_count": [{"label": m, "value": len(monthly_plates[m])} for m in months],
+        "monthly_count": [
+            {"label": m, "value": len(monthly_plates[m])} for m in months
+        ],
         "category_freq": [
             {"label": k, "count": v["count"], "cost": v["cost"]}
-            for k, v in sorted(by_category.items(), key=lambda kv: kv[1]["cost"], reverse=True)
+            for k, v in sorted(
+                by_category.items(), key=lambda kv: kv[1]["cost"], reverse=True
+            )
         ],
-        "top_cost_list": [{"plate_number": p, "count": v["count"], "cost": v["cost"]} for p, v in top_cost_list],
-        "top_freq_list": [{"plate_number": p, "count": v["count"], "cost": v["cost"]} for p, v in top_freq_list],
+        "top_cost_list": [
+            {"plate_number": p, "count": v["count"], "cost": v["cost"]}
+            for p, v in top_cost_list
+        ],
+        "top_freq_list": [
+            {"plate_number": p, "count": v["count"], "cost": v["cost"]}
+            for p, v in top_freq_list
+        ],
     }
 
 
@@ -714,7 +851,9 @@ def get_performance(db: Session) -> list[dict]:
 
     results = []
     for plate, recs in by_plate.items():
-        valid_hours = [r.total_hours for r in recs if r.total_hours and r.total_hours > 0]
+        valid_hours = [
+            r.total_hours for r in recs if r.total_hours and r.total_hours > 0
+        ]
         total_downtime = round(sum(valid_hours), 1) if valid_hours else 0.0
         vehicle = vehicles.get(plate)
         results.append(
@@ -724,7 +863,9 @@ def get_performance(db: Session) -> list[dict]:
                 "manager_unit": vehicle.manager_unit if vehicle else None,
                 "visit_count": len(recs),
                 "total_downtime_hours": total_downtime,
-                "avg_hours_per_visit": round(total_downtime / len(valid_hours), 1) if valid_hours else None,
+                "avg_hours_per_visit": (
+                    round(total_downtime / len(valid_hours), 1) if valid_hours else None
+                ),
             }
         )
     results.sort(key=lambda r: r["total_downtime_hours"], reverse=True)

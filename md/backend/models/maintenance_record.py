@@ -1,6 +1,5 @@
-from sqlalchemy import Column, Integer, String, DateTime, Float
-
 from core.database import Base
+from sqlalchemy import Column, DateTime, Float, Integer, String
 
 
 class MaintenanceRecord(Base):

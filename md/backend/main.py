@@ -12,22 +12,28 @@ from dotenv import load_dotenv
 # (mặc định chỉ tìm .env ở working directory hiện tại, tức backend/, không có file ở đó).
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
-from fastapi import FastAPI  # noqa: E402
-from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
-from api.routes import router as api_router  # noqa: E402
+import models.app_settings  # noqa: F401,E402
+import models.maintenance_record  # noqa: F401,E402
+
+# 4 import dưới đây chỉ cần CHẠY (đăng ký model với Base.metadata), không cần dùng tên import —
+# viết dạng "import module" (thay vì "from module import Name") để luôn nằm trên 1 dòng, tránh
+# Black tự bẻ dòng "from x import (Name,)" khi dòng có thêm comment noqa vượt quá giới hạn, vì
+# noqa đặt ở dòng đóng ")" sẽ không còn tác dụng cho lỗi báo ở dòng "from x import (" phía trên.
+import models.vehicle  # noqa: F401,E402
+import models.vehicle_maintenance_status  # noqa: F401,E402
 from api.auth import router as auth_router  # noqa: E402
-from api.upload import router as upload_router  # noqa: E402
 from api.fleet import router as fleet_router  # noqa: E402
+from api.routes import router as api_router  # noqa: E402
+from api.upload import router as upload_router  # noqa: E402
 from core.config import settings  # noqa: E402
-from core.database import engine, SessionLocal  # noqa: E402
+from core.database import SessionLocal, engine  # noqa: E402
 from core.migrate import run_startup_migrations  # noqa: E402
 from core.security import get_password_hash  # noqa: E402
-from models.user import Base as UserBase, User  # noqa: E402
+from fastapi import FastAPI  # noqa: E402
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from models.audit import Base as AuditBase  # noqa: E402
-from models.vehicle import Vehicle  # noqa: F401,E402
-from models.maintenance_record import MaintenanceRecord  # noqa: F401,E402
-from models.vehicle_maintenance_status import VehicleMaintenanceStatus  # noqa: F401,E402
-from models.app_settings import AppSettings  # noqa: F401,E402
+from models.user import Base as UserBase  # noqa: E402
+from models.user import User  # noqa: E402
 from services import sheet_sync  # noqa: E402
 
 SHEET_SYNC_INTERVAL_SECONDS = 60
@@ -53,7 +59,9 @@ def _seed_admin_account() -> None:
         existing = db.query(User).filter(User.email == ADMIN_SEED_EMAIL).first()
         if existing:
             return
-        generated_password = secrets.token_urlsafe(9)  # ~12 ký tự, đủ mạnh cho mật khẩu tạm
+        generated_password = secrets.token_urlsafe(
+            9
+        )  # ~12 ký tự, đủ mạnh cho mật khẩu tạm
         admin = User(
             username="linhnd1",
             email=ADMIN_SEED_EMAIL,
@@ -69,7 +77,9 @@ def _seed_admin_account() -> None:
         print("=" * 72)
         print(f"[seed_admin] Đã tạo tài khoản Admin: {ADMIN_SEED_EMAIL}")
         print(f"[seed_admin] Mật khẩu tạm (chỉ hiện 1 lần này): {generated_password}")
-        print("[seed_admin] Hãy đăng nhập và đổi mật khẩu ngay — hệ thống sẽ tự bắt đổi ở lần đăng nhập đầu.")
+        print(
+            "[seed_admin] Hãy đăng nhập và đổi mật khẩu ngay — hệ thống sẽ tự bắt đổi ở lần đăng nhập đầu."
+        )
         print("=" * 72)
     finally:
         db.close()
@@ -82,7 +92,7 @@ app = FastAPI(title=settings.PROJECT_NAME, description="Enterprise Framework API
 # Cấu hình CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], 
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -93,6 +103,7 @@ app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(upload_router, prefix="/api/v1/upload", tags=["File Upload"])
 app.include_router(fleet_router, prefix="/api/v1/fleet", tags=["Fleet"])
 app.include_router(api_router, prefix="/api/v1", tags=["General"])
+
 
 def _sync_from_sheet_blocking() -> None:
     db = SessionLocal()
@@ -120,8 +131,14 @@ async def start_periodic_sheet_sync() -> None:
 
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to Internal App Framework. Go to /docs for API documentation."}
+    return {
+        "message": "Welcome to Internal App Framework. Go to /docs for API documentation."
+    }
+
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+
+    # nosec B104: bind 0.0.0.0 là CHỦ Ý — cần truy cập được từ máy khác trong LAN (không chỉ
+    # localhost), Frontend Vite đã có proxy "/api" trỏ đúng cổng này (xem frontend/vite.config.js).
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)  # nosec B104

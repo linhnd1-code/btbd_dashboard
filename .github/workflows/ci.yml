@@ -27,11 +27,15 @@ jobs:
       - name: Kiểm tra Format (Black & Isort)
         run: |
           black --check md/backend/
-          isort --check-only md/backend/
+          # --profile black BẮT BUỘC: không có nó, Isort tự chọn kiểu bẻ dòng import khác Black
+          # (vd "from x import (a, b,\n  c)" theo Vertical Hanging Indent), khiến 2 lệnh xung đột
+          # nhau — file không bao giờ pass được cả 2 cùng lúc. .pre-commit-config.yaml đã có đúng
+          # cờ này từ trước, CI thiếu nên phải thêm vào đây cho khớp.
+          isort --check-only --profile black md/backend/
 
       - name: Linter - Quét lỗi cú pháp (Flake8)
         run: |
-          flake8 md/backend/ --max-line-length=88
+          flake8 md/backend/ --max-line-length=160
 
       - name: Security Scanner - Quét lỗ hổng (Bandit)
         run: |

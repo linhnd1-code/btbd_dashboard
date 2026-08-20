@@ -1,6 +1,5 @@
-from sqlalchemy import Column, Integer
-
 from core.database import Base
+from sqlalchemy import Column, Integer
 
 
 class AppSettings(Base):

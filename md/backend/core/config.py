@@ -1,11 +1,13 @@
 import os
 
+
 class Settings:
     PROJECT_NAME: str = "Video Render Core System"
     # Tự động tạo thư mục chứa video
     BASE_DIR: str = os.path.dirname(os.path.dirname(__file__))
     UPLOAD_DIR: str = os.path.join(BASE_DIR, "uploads")
     OUTPUT_DIR: str = os.path.join(BASE_DIR, "outputs")
+
 
 settings = Settings()
 
