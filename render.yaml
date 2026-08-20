@@ -1,0 +1,27 @@
+# Render Blueprint — cho phép Render tự tạo cả Web Service + Database khi bạn "New +" ->
+# "Blueprint" và chọn repo này, thay vì phải bấm tạo tay từng phần. Nếu Render báo lỗi khi đọc
+# file này (schema Render có thể đã đổi so với lúc viết file này), tạo tay theo hướng dẫn kèm
+# theo (README hoặc tin nhắn) vẫn cho ra đúng kết quả — file này chỉ để tiện, không bắt buộc.
+databases:
+  - name: btbd-fleet-db
+    plan: free # Free Postgres của Render hết hạn sau ~30 ngày — nhớ nâng cấp gói trước khi hết hạn
+              # nếu muốn dữ liệu tiếp tục được lưu, xem thông báo email Render gửi trước ngày hết hạn.
+
+services:
+  - type: web
+    name: btbd-fleet-dashboard
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free # Free Web Service của Render tự "ngủ" sau ~15 phút không có ai truy cập, lần mở
+               # lại đầu tiên sẽ chậm (~30-60s để khởi động lại container) — bình thường, không phải lỗi.
+    healthCheckPath: /
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: SECRET_KEY
+        generateValue: true # Render tự sinh 1 khoá ngẫu nhiên, không cần điền tay
+      - key: DATABASE_URL
+        fromDatabase:
+          name: btbd-fleet-db
+          property: connectionString

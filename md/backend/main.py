@@ -31,6 +31,8 @@ from core.migrate import run_startup_migrations  # noqa: E402
 from core.security import get_password_hash  # noqa: E402
 from fastapi import FastAPI  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+from fastapi.responses import FileResponse  # noqa: E402
+from fastapi.staticfiles import StaticFiles  # noqa: E402
 from models.audit import Base as AuditBase  # noqa: E402
 from models.user import Base as UserBase  # noqa: E402
 from models.user import User  # noqa: E402
@@ -129,16 +131,51 @@ async def start_periodic_sheet_sync() -> None:
     asyncio.create_task(_periodic_sheet_sync())
 
 
-@app.get("/")
-def read_root():
-    return {
-        "message": "Welcome to Internal App Framework. Go to /docs for API documentation."
-    }
+# Production (Render...): frontend đã build tĩnh (`npm run build` -> frontend/dist/) được chính
+# FastAPI phục vụ luôn — 1 service duy nhất, tránh phải quản lý CORS/2 domain riêng biệt. Dev local
+# vẫn dùng Vite dev server riêng (frontend/dist/ chưa tồn tại) nên khối này chỉ chạy khi có build.
+FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
+
+if FRONTEND_DIST.is_dir():
+    app.mount(
+        "/assets",
+        StaticFiles(directory=FRONTEND_DIST / "assets"),
+        name="frontend-assets",
+    )
+
+    @app.get("/{full_path:path}")
+    def serve_frontend(full_path: str):
+        """Trả file tĩnh nếu có, ngược lại trả về index.html để React Router tự xử lý route
+        (SPA) — BẮT BUỘC đặt route này SAU cùng (đã include_router API ở trên) để không che mất
+        các API thật dưới /api/v1/*."""
+        candidate = FRONTEND_DIST / full_path
+        if full_path and candidate.is_file():
+            return FileResponse(candidate)
+        return FileResponse(FRONTEND_DIST / "index.html")
+
+else:
+
+    @app.get("/")
+    def read_root():
+        return {
+            "message": "Welcome to Internal App Framework. Go to /docs for API documentation.",
+            "note": "Chưa build frontend (frontend/dist/ không tồn tại) — chạy 'npm run dev' trong frontend/ để dùng UI khi phát triển.",
+        }
 
 
 if __name__ == "__main__":
+    import os
+
     import uvicorn
 
-    # nosec B104: bind 0.0.0.0 là CHỦ Ý — cần truy cập được từ máy khác trong LAN (không chỉ
-    # localhost), Frontend Vite đã có proxy "/api" trỏ đúng cổng này (xem frontend/vite.config.js).
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)  # nosec B104
+    # Render (và hầu hết PaaS) tự cấp cổng qua biến môi trường PORT — phải lắng nghe đúng cổng
+    # đó, không được hardcode 8000, nếu không container sẽ không nhận traffic vào được.
+    # Bandit B104 CỐ Ý bị nosec ở dòng dưới: bind 0.0.0.0 là CHỦ Ý, cần truy cập được từ máy
+    # khác trong LAN/PaaS (không chỉ localhost) — noqa/nosec phải đặt ĐÚNG dòng chứa host=..., đặt
+    # ở comment phía trên hoặc dòng đóng ")" sẽ không có tác dụng khi Black bẻ lệnh ra nhiều dòng.
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",  # nosec B104
+        port=int(os.getenv("PORT", 8000)),
+        reload=os.getenv("ENVIRONMENT", "development") == "development",
+    )

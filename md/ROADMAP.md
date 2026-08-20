@@ -54,6 +54,6 @@ Bạn có thể đánh dấu tick `[x]` vào các mục đã hoàn thành để 
 ## 🚀 GIAI ĐOẠN 4: VẬN HÀNH & TRIỂN KHAI (DevOps)
 *Đưa dự án lên môi trường thực tế.*
 
-- [ ] **Docker hóa:** Viết `docker-compose.yml` và `Dockerfile` đóng gói toàn bộ hệ thống.
+- [x] **Docker hóa:** `Dockerfile` build 2 giai đoạn (Node build Frontend tĩnh -> Python phục vụ luôn cả Frontend + API trong 1 image) — xem `render.yaml` để deploy lên Render (Web Service + Postgres free).
 - [x] **CI/CD Pipeline:** Tự động kiểm thử code (Code Quality, Security) bằng GitHub Actions.
 - [ ] **Tự động Backup:** Viết script tự động nén Database hàng ngày vào lúc nửa đêm.
