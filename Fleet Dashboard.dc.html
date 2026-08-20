@@ -1,0 +1,1795 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/broadsheet-0310e0a1-37d6-4682-8ce5-b159ecc1eb50/styles.css">
+<script src="_ds/broadsheet-0310e0a1-37d6-4682-8ce5-b159ecc1eb50/_ds_bundle.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/duotone/style.css">
+<style>
+  @keyframes flt-fade { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:none } }
+  @keyframes flt-pulse { 0%,100% { opacity:1 } 50% { opacity:.35 } }
+  .flt-scroll::-webkit-scrollbar { width:9px; height:9px }
+  .flt-scroll::-webkit-scrollbar-thumb { background:var(--color-neutral-400); border-radius:6px }
+  .flt-scroll::-webkit-scrollbar-track { background:transparent }
+</style>
+</helmet>
+<div style="display:flex;height:100vh;min-height:640px;background:#eef0f3;color:var(--color-text);overflow:hidden">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside style="width:248px;flex:none;display:flex;flex-direction:column;background:#141c2e;color:#e8ecf4;height:100%">
+    <div style="padding:17px 16px 15px;display:flex;align-items:center;gap:11px;border-bottom:1px solid rgba(255,255,255,.07)">
+      <div style="width:38px;height:38px;flex:none;border-radius:9px;background:linear-gradient(135deg,#3b82f6,#7c5cfc);display:grid;place-items:center"><i class="ph-duotone ph-truck" style="font-size:21px;color:#fff"></i></div>
+      <div style="line-height:1.18">
+        <div style="font:700 17px var(--font-heading);letter-spacing:.01em;color:#fff">FLEET OPS</div>
+        <div style="font-size:11px;color:#8b93a7">Quản lý Đội xe</div>
+      </div>
+    </div>
+    <nav class="flt-scroll" style="flex:1;overflow-y:auto;padding:12px 12px 20px">
+      <sc-for list="{{ nav }}" as="n" hint-placeholder-count="8">
+        <sc-if value="{{ n.isLeaf }}">
+          <button type="button" onClick="{{ n.onClick }}" style="{{ n.style }}">
+            <i class="ph-duotone ph-{{ n.icon }}" style="font-size:17px;flex:none"></i>
+            <span style="flex:1;text-align:left">{{ n.label }}</span>
+          </button>
+        </sc-if>
+        <sc-if value="{{ n.isParent }}">
+          <button type="button" onClick="{{ n.onToggle }}" style="{{ n.style }}">
+            <i class="ph-duotone ph-{{ n.icon }}" style="font-size:17px;flex:none"></i>
+            <span style="flex:1;text-align:left">{{ n.label }}</span>
+            <i class="ph-bold ph-caret-down" style="{{ n.caretStyle }}"></i>
+          </button>
+          <sc-if value="{{ n.expanded }}" hint-placeholder-val="{{ true }}">
+            <div style="animation:flt-fade .18s ease">
+              <sc-for list="{{ n.children }}" as="c" hint-placeholder-count="3">
+                <button type="button" onClick="{{ c.onClick }}" style="{{ c.style }}">
+                  <span style="width:5px;height:5px;flex:none;border-radius:50%;background:{{ c.dot }}"></span>
+                  <span style="flex:1;text-align:left">{{ c.label }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+        </sc-if>
+      </sc-for>
+    </nav>
+    <div style="padding:13px 16px;border-top:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:12px">
+      <i class="ph-duotone ph-sun" style="font-size:17px;color:#f5a524"></i>
+      <span style="width:38px;height:20px;flex:none;border-radius:11px;background:#2a3550;position:relative;cursor:pointer"><span style="position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff"></span></span>
+      <i class="ph-duotone ph-moon" style="font-size:16px;color:#8b93a7"></i>
+      <div style="flex:1"></div>
+      <div style="width:30px;height:30px;flex:none;border-radius:50%;background:#2a3550;color:#fff;display:grid;place-items:center;font:600 12px var(--font-heading)">QL</div>
+    </div>
+  </aside>
+
+  <!-- ═══ MAIN ═══ -->
+  <div style="flex:1;display:flex;flex-direction:column;min-width:0;height:100%">
+    <!-- topbar -->
+    <header style="flex:none;display:flex;align-items:center;gap:12px;padding:12px 26px;background:#fff;border-bottom:1px solid #e7e9ec;flex-wrap:wrap">
+      <div style="position:relative;flex:1;min-width:240px;max-width:460px">
+        <i class="ph-duotone ph-magnifying-glass" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;color:#9aa1ab;pointer-events:none"></i>
+        <input class="input" list="plate-list" placeholder="Tìm nhanh biển số / 5 số cuối…" value="{{ quick }}" onInput="{{ onQuick }}" style="padding-left:38px;padding-right:66px;border-radius:22px;background:#f5f6f8">
+        <div style="position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;gap:2px">
+          <button type="button" onClick="{{ onOcr }}" title="Quét biển số bằng camera (OCR)" style="width:28px;height:28px;border:none;background:transparent;border-radius:50%;cursor:pointer;display:grid;place-items:center;color:#6b7385" style-hover="background:#e7ebf1"><i class="ph-duotone ph-camera" style="font-size:16px"></i></button>
+          <button type="button" onClick="{{ onVoice }}" title="Tìm bằng giọng nói (AI Voice)" style="width:28px;height:28px;border:none;background:transparent;border-radius:50%;cursor:pointer;display:grid;place-items:center;color:#6b7385" style-hover="background:#e7ebf1"><i class="ph-duotone ph-microphone" style="font-size:16px"></i></button>
+        </div>
+      </div>
+      <div style="flex:1"></div>
+      <div style="position:relative">
+        <button type="button" onClick="{{ onToggleNotif }}" title="Thông báo" style="width:38px;height:38px;border:1px solid #e7e9ec;background:#fff;border-radius:9px;cursor:pointer;display:grid;place-items:center;color:#4a5160;position:relative" style-hover="background:#f5f6f8">
+          <i class="ph-duotone ph-bell" style="font-size:18px"></i>
+          <sc-if value="{{ notifCount }}"><span style="position:absolute;top:-5px;right:-5px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:#e5484d;color:#fff;font:600 10px/17px var(--font-heading);text-align:center">{{ notifCount }}</span></sc-if>
+        </button>
+        <sc-if value="{{ notifOpen }}">
+          <div style="position:absolute;top:46px;right:0;width:340px;background:#fff;border:1px solid #e7e9ec;border-radius:12px;box-shadow:0 12px 32px rgba(22,30,50,.18);z-index:55;animation:flt-fade .16s ease;overflow:hidden">
+            <div style="padding:13px 16px;border-bottom:1px solid #f0f1f4;display:flex;align-items:center;justify-content:space-between"><span style="font:600 14px var(--font-heading)">Thông báo</span><span style="font-size:11px;color:#9aa1ab">{{ notifCount }} khẩn cấp</span></div>
+            <div class="flt-scroll" style="max-height:380px;overflow-y:auto">
+              <sc-for list="{{ notifs }}" as="n" hint-placeholder-count="6">
+                <div style="display:flex;gap:11px;padding:11px 16px;border-bottom:1px solid #f5f6f8;cursor:pointer" style-hover="background:#f8fafc">
+                  <div style="width:30px;height:30px;flex:none;border-radius:8px;display:grid;place-items:center;background:{{ n.dot }}1f"><i class="ph-duotone ph-{{ n.icon }}" style="font-size:15px;color:{{ n.dot }}"></i></div>
+                  <div style="flex:1;min-width:0"><div style="font:600 12.5px var(--font-heading)">{{ n.title }}</div><div style="font-size:11.5px;color:#7a828e">{{ n.body }}</div><div style="font-size:10.5px;color:#b0b6bf;margin-top:2px">{{ n.time }}</div></div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="padding:10px 16px;text-align:center;border-top:1px solid #f0f1f4"><a href="#" onClick="{{ goAI }}" style="font-size:12.5px">Xem tất cả trong AI &amp; Analytics →</a></div>
+          </div>
+        </sc-if>
+      </div>
+      <button type="button" class="btn btn-ghost" onClick="{{ onRefresh }}" style="color:#4a5160"><i class="ph-duotone ph-arrows-clockwise"></i>Làm mới</button>
+      <button type="button" class="btn btn-secondary" onClick="{{ onImportBtn }}"><i class="ph-duotone ph-upload-simple"></i>Cập nhật dữ liệu</button>
+      <button type="button" class="btn btn-secondary" onClick="{{ onCompareBtn }}"><i class="ph-duotone ph-scales"></i>So sánh xe ({{ cmpCount }})</button>
+      <button type="button" class="btn btn-primary" onClick="{{ onExport }}" style="background:#3b82f6;border-color:#3b82f6;color:#fff"><i class="ph-duotone ph-download-simple"></i>Xuất dữ liệu<i class="ph-bold ph-caret-down" style="font-size:10px;margin-left:3px"></i></button>
+    </header>
+
+    <!-- ═══ BỘ LỌC TOÀN CỤC ═══ -->
+    <div style="flex:none;display:flex;align-items:flex-end;gap:11px;flex-wrap:wrap;padding:11px 26px 13px;background:#fff;border-bottom:1px solid #e7e9ec">
+      <div style="font:600 12px var(--font-heading);color:#3f4655;padding-bottom:9px;white-space:nowrap">Bộ lọc toàn cục:</div>
+      <div class="field" style="width:142px"><label>Bộ phận QL</label><select class="input" value="{{ f.dept }}" onChange="{{ onDept }}"><sc-for list="{{ deptOpts }}" as="o" hint-placeholder-count="5"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select></div>
+      <div class="field" style="width:118px"><label>Hãng xe</label><select class="input" value="{{ f.brand }}" onChange="{{ onBrand }}"><sc-for list="{{ brandOpts }}" as="o" hint-placeholder-count="7"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select></div>
+      <div class="field" style="width:118px"><label>Tải trọng (Tấn)</label><select class="input" value="{{ f.weight }}" onChange="{{ onWeight }}"><sc-for list="{{ weightOpts }}" as="o" hint-placeholder-count="6"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select></div>
+      <div class="field" style="width:142px"><label>Trạng thái xe</label><select class="input" value="{{ f.status }}" onChange="{{ onStatus }}"><sc-for list="{{ statusOpts }}" as="o" hint-placeholder-count="5"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select></div>
+      <div class="field" style="width:98px"><label>Năm SX</label><select class="input" value="{{ f.year }}" onChange="{{ onYear }}"><sc-for list="{{ yearOpts }}" as="o" hint-placeholder-count="5"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select></div>
+      <div class="field" style="width:156px"><label>Gara sửa chữa</label><select class="input" value="{{ f.gara }}" onChange="{{ onGara }}"><sc-for list="{{ garaOpts }}" as="o" hint-placeholder-count="5"><option value="{{ o.v }}">{{ o.l }}</option></sc-for></select></div>
+      <div class="field" style="width:auto"><label>Khoảng thời gian (Ngày vào xưởng)</label><div style="display:flex;align-items:center;gap:6px"><input type="date" class="input" value="{{ f.from }}" onChange="{{ onFrom }}" style="width:132px"><span style="font-size:12px;color:#9aa1ab">đến</span><input type="date" class="input" value="{{ f.to }}" onChange="{{ onTo }}" style="width:132px"></div></div>
+      <div style="flex:1"></div>
+      <sc-if value="{{ hasFilters }}"><button type="button" class="btn btn-ghost" onClick="{{ onClear }}" style="color:#e5484d;margin-bottom:2px"><i class="ph-duotone ph-x"></i>Xóa bộ lọc</button></sc-if>
+    </div>
+    <datalist id="plate-list"><sc-for list="{{ vehiclesAll }}" as="v" hint-placeholder-count="14"><option value="{{ v.plate }}"></option></sc-for></datalist>
+
+    <!-- scroll body -->
+    <main class="flt-scroll" style="flex:1;overflow-y:auto;padding:24px 26px 60px">
+    <sc-if value="{{ showPageHead }}"><div style="margin-bottom:20px"><h1 style="font-size:23px;margin:0;letter-spacing:-.01em">{{ meta.title }}</h1><div style="font-size:12.5px;color:#7a828e;margin-top:4px">{{ meta.desc }}</div></div></sc-if>
+
+    <!-- ── 1 · TỔNG QUAN ── -->
+    <sc-if value="{{ isOverview }}" hint-placeholder-val="{{ true }}">
+    <div style="animation:flt-fade .28s ease;display:flex;flex-direction:column;gap:24px">
+      <div>
+        <h2 style="font-size:22px;margin:0 0 3px;letter-spacing:-.01em">Bảng thông tin chỉ số KPI chính <span style="font-weight:400;color:#7a828e;font-size:16px">(Kinh doanh &amp; Kỹ thuật)</span></h2>
+        <div style="font-size:12.5px;color:#8b929c">Áp dụng bộ lọc toàn cục · <strong style="color:#3f4655">{{ fleetCount }}</strong>/14 xe · cập nhật {{ updated }}</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:15px">
+        <sc-for list="{{ kpiBoard }}" as="k" hint-placeholder-count="10">
+          <div onClick="{{ k.onDrill }}" title="{{ k.titleText }}" style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:16px 16px 12px;box-shadow:0 1px 2px rgba(22,30,50,.05);display:flex;flex-direction:column;gap:8px;min-width:0;cursor:{{ k.cursor }}" style-hover="{{ k.hoverStyle }}">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+              <div style="font:600 10px/1.35 var(--font-heading);letter-spacing:.04em;text-transform:uppercase;color:#7a828e">{{ k.label }}</div>
+              <div style="width:30px;height:30px;flex:none;border-radius:8px;background:{{ k.iconBg }};display:grid;place-items:center"><i class="ph-duotone ph-{{ k.icon }}" style="font-size:16px;color:{{ k.iconColor }}"></i></div>
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:8px">
+              <div style="font-family:var(--font-heading);font-weight:700;line-height:1.05;color:{{ k.numColor }};font-size:{{ k.numSize }};font-variant-numeric:tabular-nums;overflow-wrap:{{ k.numBreak }}">{{ k.value }}<span style="font-size:13px;font-weight:500;color:#9aa1ab;margin-left:3px">{{ k.unit }}</span></div>
+              <span style="font-size:11px;font-weight:600;color:{{ k.deltaColor }};margin-bottom:3px">{{ k.delta }}</span>
+            </div>
+            <div style="height:28px;margin:0 -2px">{{ k.spark }}</div>
+            <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:11px;color:#9aa1ab">{{ k.sub }}</span><sc-if value="{{ k.clickable }}"><i class="ph-bold ph-arrow-right" style="font-size:11px;color:#c3ccdb"></i></sc-if></div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start">
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px">
+          <h4 style="margin:0 0 14px;font-size:15px">Trạng thái hoạt động xe</h4>
+          <div style="display:flex;align-items:center;gap:18px">
+            <div style="flex:none">{{ statusDonut }}</div>
+            <div style="display:flex;flex-direction:column;gap:9px;flex:1">
+              <sc-for list="{{ statusLegend }}" as="s" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;flex:none;border-radius:3px;background:{{ s.color }}"></span><span style="font-size:12.5px;flex:1;color:#5b636f">{{ s.label }}</span><span style="font:600 13px var(--font-heading)">{{ s.count }}</span></div></sc-for>
+            </div>
+          </div>
+        </div>
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px">
+          <h4 style="margin:0 0 14px;font-size:15px">Chi phí sửa chữa theo tháng</h4>
+          {{ costBars }}
+        </div>
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:16px 20px 18px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px"><h4 style="margin:0;font-size:15px">Cảnh báo quan trọng</h4><a href="#" onClick="{{ goAI }}" style="font-size:12px">Xem tất cả →</a></div>
+          <div style="display:flex;flex-direction:column">
+            <sc-for list="{{ ovAlerts }}" as="a" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:11px;padding:8px 0;border-bottom:1px solid #f0f1f4">
+                <span style="width:7px;height:7px;flex:none;border-radius:50%;background:{{ a.dot }}"></span>
+                <div style="flex:1;min-width:0"><div style="font:600 12.5px var(--font-heading)">{{ a.title }}</div><div style="font-size:11px;color:#9aa1ab">{{ a.body }}</div></div>
+                <span class="tag" style="{{ a.tagStyle }}">{{ a.tag }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start">
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px">
+          <h4 style="margin:0 0 14px;font-size:15px">Sức khỏe đội xe</h4>
+          <div style="display:flex;flex-wrap:wrap;gap:9px 14px;margin-bottom:6px">
+            <sc-for list="{{ healthLegend }}" as="s" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;flex:none;border-radius:3px;background:{{ s.color }}"></span><span style="font-size:11.5px;color:#5b636f">{{ s.label }}</span></div></sc-for>
+          </div>
+          <div style="display:flex;justify-content:center;padding:8px 0 2px">{{ healthDonut }}</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px">
+          <h4 style="margin:0 0 10px;font-size:15px">Chi phí vận hành theo tháng</h4>
+          <div style="display:flex;flex-wrap:wrap;gap:8px 14px;margin-bottom:6px">
+            <sc-for list="{{ opLegend }}" as="s" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;flex:none;border-radius:3px;background:{{ s.color }}"></span><span style="font-size:11.5px;color:#5b636f">{{ s.label }}</span></div></sc-for>
+          </div>
+          {{ opBars }}
+        </div>
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px">
+          <h4 style="margin:0 0 14px;font-size:15px">Tổng ODO đội xe theo tháng</h4>
+          {{ odoBars }}
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ── 2·0 · TỔNG QUAN ĐỘI XE ── -->
+    <sc-if value="{{ isFleetOverview }}">
+    <div style="animation:flt-fade .28s ease;display:flex;flex-direction:column;gap:34px">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:26px">
+        <sc-for list="{{ fleetKpis }}" as="k" hint-placeholder-count="4">
+          <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:15px 16px 13px;box-shadow:0 1px 2px rgba(22,30,50,.05);display:flex;flex-direction:column;gap:6px">
+            <div style="font:400 10.5px/1.3 var(--font-heading);letter-spacing:.07em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 55%,transparent)">{{ k.label }}</div>
+            <div style="font:600 34px/1 var(--font-heading);letter-spacing:-.02em">{{ k.value }}<span style="font-size:15px;font-weight:400;margin-left:3px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">{{ k.unit }}</span></div>
+            <div style="font-size:11.5px;font-style:italic;color:color-mix(in srgb,var(--color-text) 55%,transparent)">{{ k.sub }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:44px">
+        <div>
+          <h4 style="margin:0 0 16px">Cơ cấu theo loại xe</h4>
+          <sc-for list="{{ byType }}" as="b" hint-placeholder-count="4">
+            <div style="margin-bottom:13px">
+              <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>{{ b.label }}</span><span style="font-weight:600">{{ b.count }} xe</span></div>
+              <div style="height:9px;background:var(--color-neutral-200);border-radius:2px;overflow:hidden"><div style="height:100%;width:{{ b.pct }};background:var(--color-accent)"></div></div>
+            </div>
+          </sc-for>
+        </div>
+        <div>
+          <h4 style="margin:0 0 16px">Cơ cấu theo hãng</h4>
+          <sc-for list="{{ byBrand }}" as="b" hint-placeholder-count="6">
+            <div style="margin-bottom:13px">
+              <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>{{ b.label }}</span><span style="font-weight:600">{{ b.count }} xe</span></div>
+              <div style="height:9px;background:var(--color-neutral-200);border-radius:2px;overflow:hidden"><div style="height:100%;width:{{ b.pct }};background:var(--color-accent-2-500)"></div></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:start">
+        <div>
+          <h4 style="margin:0 0 16px">Phân bố tuổi phương tiện</h4>
+          <div style="display:flex;align-items:flex-end;gap:18px;height:150px;padding-top:10px">
+            <sc-for list="{{ ageDist }}" as="a" hint-placeholder-count="5">
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;height:100%;justify-content:flex-end">
+                <div style="font:600 14px var(--font-heading)">{{ a.count }}</div>
+                <div style="width:100%;background:var(--color-accent);border-radius:2px 2px 0 0;height:{{ a.h }}"></div>
+                <div style="font-size:11px;color:color-mix(in srgb,var(--color-text) 55%,transparent);text-align:center">{{ a.label }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div>
+          <h4 style="margin:0 0 16px">Trạng thái vận hành</h4>
+          <div style="display:flex;align-items:center;gap:22px">
+            <div style="position:relative;flex:none">{{ statusDonut }}
+              <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="font:600 30px/1 var(--font-heading)">57%</div><div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 55%,transparent)">hoạt động</div></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:11px">
+              <sc-for list="{{ statusLegend }}" as="s" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:9px"><span style="width:11px;height:11px;flex:none;border-radius:2px;background:{{ s.color }}"></span><span style="font-size:13px;flex:1">{{ s.label }}</span><span style="font:600 14px var(--font-heading)">{{ s.count }}</span></div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ── 2·1 · DANH SÁCH XE ── -->
+    <sc-if value="{{ isVehicleList }}">
+    <div style="animation:flt-fade .28s ease">
+      <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:22px">
+        <div class="seg">
+          <sc-for list="{{ vehFilters }}" as="f" hint-placeholder-count="5">
+            <label class="seg-opt" style="{{ f.style }}"><input type="radio" name="vf" onClick="{{ f.onClick }}"><span>{{ f.label }}</span></label>
+          </sc-for>
+        </div>
+        <div class="field" style="flex:1;min-width:200px;max-width:280px"><input class="input" placeholder="Tìm biển số, tài xế…" value="{{ vehSearch }}" onInput="{{ onSearch }}"></div>
+        <div style="flex:1"></div>
+        <button type="button" class="btn btn-primary"><i class="ph-duotone ph-plus"></i>Thêm xe</button>
+      </div>
+      <div style="font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent);margin-bottom:10px">Hiển thị {{ vehCount }} phương tiện</div>
+      <table class="table">
+        <thead><tr><th>Biển số</th><th>Hãng / Model</th><th>Loại</th><th>Năm</th><th style="text-align:right">Odo (km)</th><th>Tài xế</th><th>Trạng thái</th><th></th></tr></thead>
+        <tbody>
+          <sc-for list="{{ filteredVehicles }}" as="v" hint-placeholder-count="8">
+            <tr style="cursor:pointer" onClick="{{ v.open }}">
+              <td style="font-weight:600;font-family:var(--font-heading)">{{ v.plate }}</td>
+              <td>{{ v.brandModel }}</td>
+              <td>{{ v.type }}</td>
+              <td>{{ v.year }}</td>
+              <td style="text-align:right;font-variant-numeric:tabular-nums">{{ v.odoFmt }}</td>
+              <td>{{ v.driver }}</td>
+              <td><span class="tag" style="{{ v.statusStyle }}">{{ v.statusLabel }}</span></td>
+              <td style="text-align:right"><i class="ph-duotone ph-caret-right" style="color:var(--color-accent)"></i></td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </div>
+    </sc-if>
+
+    <!-- ── 2·2 · HỒ SƠ GIẤY TỜ ── -->
+    <sc-if value="{{ isDocs }}">
+    <div style="animation:flt-fade .28s ease">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:26px;margin-bottom:28px">
+        <sc-for list="{{ docKpis }}" as="k" hint-placeholder-count="3">
+          <div style="background:#fff;border:1px solid #e7e9ec;border-left:3px solid {{ k.bar }};border-radius:12px;padding:15px 16px 13px;box-shadow:0 1px 2px rgba(22,30,50,.05);display:flex;flex-direction:column;gap:6px">
+            <div style="font:400 10.5px/1.3 var(--font-heading);letter-spacing:.07em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 55%,transparent)">{{ k.label }}</div>
+            <div style="font:600 34px/1 var(--font-heading);letter-spacing:-.02em">{{ k.value }}<span style="font-size:15px;font-weight:400;margin-left:3px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">giấy tờ</span></div>
+            <div style="font-size:11.5px;font-style:italic;color:color-mix(in srgb,var(--color-text) 55%,transparent)">{{ k.sub }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;gap:14px;align-items:center;margin-bottom:18px">
+        <div class="seg">
+          <sc-for list="{{ docTypeFilters }}" as="f" hint-placeholder-count="4">
+            <label class="seg-opt" style="{{ f.style }}"><input type="radio" name="dt" onClick="{{ f.onClick }}"><span>{{ f.label }}</span></label>
+          </sc-for>
+        </div>
+      </div>
+      <table class="table">
+        <thead><tr><th>Biển số</th><th>Loại giấy tờ</th><th>Số / Ghi chú</th><th>Ngày hết hạn</th><th>Còn lại</th><th>Trạng thái</th><th></th></tr></thead>
+        <tbody>
+          <sc-for list="{{ filteredDocs }}" as="d" hint-placeholder-count="8">
+            <tr>
+              <td style="font-weight:600;font-family:var(--font-heading)">{{ d.plate }}</td>
+              <td>{{ d.typeName }}</td>
+              <td style="color:color-mix(in srgb,var(--color-text) 60%,transparent)">{{ d.ref }}</td>
+              <td style="font-variant-numeric:tabular-nums">{{ d.date }}</td>
+              <td style="font-variant-numeric:tabular-nums;{{ d.daysStyle }}">{{ d.daysLabel }}</td>
+              <td><span class="tag" style="{{ d.statusStyle }}">{{ d.statusLabel }}</span></td>
+              <td style="text-align:right"><button type="button" class="btn btn-ghost" style="font-size:12.5px">Gia hạn</button></td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </div>
+    </sc-if>
+
+    <!-- ── 2·3 · KẾ HOẠCH ĐĂNG KIỂM ── -->
+    <sc-if value="{{ isRegistration }}">
+    <div style="animation:flt-fade .28s ease;display:flex;flex-direction:column;gap:22px">
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px">
+        <sc-for list="{{ regKpis }}" as="k" hint-placeholder-count="3">
+          <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:16px 18px 14px;box-shadow:0 1px 2px rgba(22,30,50,.05);display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px"><div style="font:600 10.5px/1.35 var(--font-heading);letter-spacing:.04em;text-transform:uppercase;color:#7a828e">{{ k.label }}</div><div style="width:30px;height:30px;flex:none;border-radius:8px;background:{{ k.iconBg }};display:grid;place-items:center"><i class="ph-duotone ph-{{ k.icon }}" style="font-size:16px;color:{{ k.iconColor }}"></i></div></div>
+            <div style="font:700 30px/1 var(--font-heading);color:{{ k.numColor }};font-variant-numeric:tabular-nums">{{ k.value }}</div>
+            <div style="font-size:11.5px;color:#9aa1ab">{{ k.sub }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px">
+          <h4 style="margin:0 0 12px;font-size:15px">Theo dõi đăng kiểm trong tháng</h4>
+          <table class="table"><thead><tr><th>Biển số</th><th>Bộ phận</th><th>Ngày hết hạn</th><th>Còn lại</th><th>Trạng thái</th></tr></thead><tbody>
+            <sc-for list="{{ regTrack }}" as="r" hint-placeholder-count="4"><tr><td style="font-weight:600;font-family:var(--font-heading)">{{ r.plate }}</td><td style="color:#5b636f">{{ r.dept }}</td><td style="font-variant-numeric:tabular-nums">{{ r.date }}</td><td style="{{ r.daysStyle }}">{{ r.daysLabel }}</td><td><span class="tag" style="{{ r.statusStyle }}">{{ r.statusLabel }}</span></td></tr></sc-for>
+          </tbody></table>
+        </div>
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px">
+          <h4 style="margin:0 0 12px;font-size:15px">Hết hạn trong 30 ngày tới</h4>
+          <table class="table"><thead><tr><th>Biển số</th><th>Bộ phận</th><th>Ngày hết hạn</th><th>Còn lại</th><th>Trạng thái</th></tr></thead><tbody>
+            <sc-for list="{{ regSoonList }}" as="r" hint-placeholder-count="3"><tr><td style="font-weight:600;font-family:var(--font-heading)">{{ r.plate }}</td><td style="color:#5b636f">{{ r.dept }}</td><td style="font-variant-numeric:tabular-nums">{{ r.date }}</td><td style="{{ r.daysStyle }}">{{ r.daysLabel }}</td><td><span class="tag" style="{{ r.statusStyle }}">{{ r.statusLabel }}</span></td></tr></sc-for>
+          </tbody></table>
+        </div>
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px">
+          <h4 style="margin:0 0 12px;font-size:15px">Đăng kiểm tháng kế tiếp</h4>
+          <table class="table"><thead><tr><th>Biển số</th><th>Bộ phận</th><th>Ngày hết hạn</th><th>Còn lại</th></tr></thead><tbody>
+            <sc-for list="{{ regNextList }}" as="r" hint-placeholder-count="3"><tr><td style="font-weight:600;font-family:var(--font-heading)">{{ r.plate }}</td><td style="color:#5b636f">{{ r.dept }}</td><td style="font-variant-numeric:tabular-nums">{{ r.date }}</td><td style="{{ r.daysStyle }}">{{ r.daysLabel }}</td></tr></sc-for>
+          </tbody></table>
+        </div>
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px">
+          <h4 style="margin:0 0 12px;font-size:15px">Xe đã hết đăng kiểm</h4>
+          <table class="table"><thead><tr><th>Biển số</th><th>Bộ phận</th><th>Ngày hết hạn</th><th>Quá hạn</th><th>Trạng thái</th></tr></thead><tbody>
+            <sc-for list="{{ regExpList }}" as="r" hint-placeholder-count="2"><tr><td style="font-weight:600;font-family:var(--font-heading)">{{ r.plate }}</td><td style="color:#5b636f">{{ r.dept }}</td><td style="font-variant-numeric:tabular-nums">{{ r.date }}</td><td style="{{ r.daysStyle }}">{{ r.daysLabel }}</td><td><span class="tag" style="{{ r.statusStyle }}">{{ r.statusLabel }}</span></td></tr></sc-for>
+          </tbody></table>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ── 3·0 · TỔNG QUAN BD-SC ── -->
+    <sc-if value="{{ isMaintOverview }}">
+    <div style="animation:flt-fade .28s ease;display:flex;flex-direction:column;gap:34px">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:26px">
+        <sc-for list="{{ maintKpis }}" as="k" hint-placeholder-count="4">
+          <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:15px 16px 13px;box-shadow:0 1px 2px rgba(22,30,50,.05);display:flex;flex-direction:column;gap:6px">
+            <div style="font:400 10.5px/1.3 var(--font-heading);letter-spacing:.07em;text-transform:uppercase;color:color-mix(in srgb,var(--color-text) 55%,transparent)">{{ k.label }}</div>
+            <div style="font:600 34px/1 var(--font-heading);letter-spacing:-.02em">{{ k.value }}<span style="font-size:15px;font-weight:400;margin-left:3px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">{{ k.unit }}</span></div>
+            <div style="font-size:11.5px;font-style:italic;color:{{ k.subColor }}">{{ k.sub }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:44px;align-items:start">
+        <div>
+          <h4 style="margin:0 0 6px">Chi phí bảo dưỡng · sửa chữa</h4>
+          <div style="font-size:12px;font-style:italic;color:color-mix(in srgb,var(--color-text) 55%,transparent);margin-bottom:14px">Triệu ₫/tháng · 6 tháng gần nhất</div>
+          {{ costTrend }}
+        </div>
+        <div>
+          <h4 style="margin:0 0 16px">Chi phí theo hạng mục</h4>
+          <sc-for list="{{ costByCat }}" as="c" hint-placeholder-count="6">
+            <div style="margin-bottom:13px">
+              <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>{{ c.label }}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">{{ c.value }}</span></div>
+              <div style="height:9px;background:var(--color-neutral-200);border-radius:2px;overflow:hidden"><div style="height:100%;width:{{ c.pct }};background:var(--color-accent)"></div></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ── 3·1 · NHẬT KÝ SỬA CHỮA ── -->
+    <sc-if value="{{ isRepairLog }}">
+    <div style="animation:flt-fade .28s ease">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+        <div style="font-size:13px;color:color-mix(in srgb,var(--color-text) 60%,transparent)">{{ repairs.length }} bản ghi · tổng chi phí <strong style="color:var(--color-text)">{{ repairTotal }}</strong></div>
+        <button type="button" class="btn btn-primary"><i class="ph-duotone ph-plus"></i>Ghi nhận sửa chữa</button>
+      </div>
+      <table class="table">
+        <thead><tr><th>Ngày</th><th>Biển số</th><th>Hạng mục</th><th>Mô tả</th><th>Xưởng</th><th style="text-align:right">Chi phí</th><th>Trạng thái</th></tr></thead>
+        <tbody>
+          <sc-for list="{{ repairs }}" as="r" hint-placeholder-count="8">
+            <tr>
+              <td style="font-variant-numeric:tabular-nums;white-space:nowrap">{{ r.date }}</td>
+              <td style="font-weight:600;font-family:var(--font-heading)">{{ r.plate }}</td>
+              <td>{{ r.cat }}</td>
+              <td style="max-width:260px;color:color-mix(in srgb,var(--color-text) 70%,transparent)">{{ r.desc }}</td>
+              <td style="color:color-mix(in srgb,var(--color-text) 60%,transparent)">{{ r.garage }}</td>
+              <td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:600">{{ r.costFmt }}</td>
+              <td><span class="tag" style="{{ r.statusStyle }}">{{ r.status }}</span></td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </div>
+    </sc-if>
+
+    <!-- ── 3·2 · LỊCH BẢO DƯỠNG ── -->
+    <sc-if value="{{ isMaintSchedule }}">
+    <div style="animation:flt-fade .28s ease">
+      <div style="font-size:13px;color:color-mix(in srgb,var(--color-text) 60%,transparent);margin-bottom:20px">Sắp xếp theo mức độ ưu tiên · mốc bảo dưỡng theo km &amp; thời gian</div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <sc-for list="{{ schedule }}" as="s" hint-placeholder-count="8">
+          <div style="display:grid;grid-template-columns:14px 1fr auto auto auto;gap:20px;align-items:center;padding:15px 4px;border-bottom:1px solid color-mix(in srgb,var(--color-text) 8%,transparent)">
+            <span style="width:11px;height:11px;border-radius:50%;background:{{ s.dot }}"></span>
+            <div>
+              <div style="font:600 15px var(--font-heading)"><span style="color:var(--color-accent)">{{ s.plate }}</span> · {{ s.item }}</div>
+              <div style="font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">Odo hiện tại {{ s.odoNow }} → mốc {{ s.odoNext }} km</div>
+            </div>
+            <div style="text-align:right"><div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:color-mix(in srgb,var(--color-text) 50%,transparent)">Dự kiến</div><div style="font:600 14px var(--font-heading);font-variant-numeric:tabular-nums">{{ s.dueDate }}</div></div>
+            <div style="text-align:right;min-width:96px"><span class="tag" style="{{ s.statusStyle }}">{{ s.statusLabel }}</span></div>
+            <button type="button" class="btn btn-secondary" style="font-size:12.5px">Lên lịch</button>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ── 3·1 · THEO DÕI BẢO DƯỠNG ── -->
+    <sc-if value="{{ isMaintTrack }}">
+    <div style="animation:flt-fade .28s ease;display:flex;flex-direction:column;gap:20px">
+      <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px">
+        <sc-for list="{{ maintTrackKpis }}" as="k" hint-placeholder-count="10">
+          <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:15px 16px 13px;box-shadow:0 1px 2px rgba(22,30,50,.05);display:flex;flex-direction:column;gap:8px;min-width:0">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px"><div style="font:600 10px/1.35 var(--font-heading);letter-spacing:.04em;text-transform:uppercase;color:#7a828e">{{ k.label }}</div><div style="width:28px;height:28px;flex:none;border-radius:8px;background:{{ k.iconBg }};display:grid;place-items:center"><i class="ph-duotone ph-{{ k.icon }}" style="font-size:15px;color:{{ k.iconColor }}"></i></div></div>
+            <div style="font-family:var(--font-heading);font-weight:700;line-height:1.05;color:{{ k.numColor }};font-size:{{ k.numSize }};font-variant-numeric:tabular-nums;overflow-wrap:{{ k.numBreak }}">{{ k.value }}<span style="font-size:12px;font-weight:500;color:#9aa1ab;margin-left:3px">{{ k.unit }}</span></div>
+            <div style="font-size:11px;color:#9aa1ab">{{ k.sub }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start">
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px">
+          <h4 style="margin:0 0 12px;font-size:15px">Tỷ lệ tuân thủ bảo dưỡng</h4>
+          <div style="display:flex;flex-wrap:wrap;gap:9px 14px;margin-bottom:6px"><sc-for list="{{ complianceLegend }}" as="s" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:3px;background:{{ s.color }}"></span><span style="font-size:11.5px;color:#5b636f">{{ s.label }} · {{ s.value }}</span></div></sc-for></div>
+          <div style="display:flex;justify-content:center;padding:6px 0">{{ complianceDonut }}</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px"><h4 style="margin:0 0 12px;font-size:15px">Xu hướng bảo dưỡng đúng hạn</h4>{{ onTimeTrendBars }}</div>
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px"><h4 style="margin:0 0 12px;font-size:15px">Số lượng xe bảo dưỡng theo tháng</h4>{{ maintCountBars }}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:16px;align-items:start">
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px"><h4 style="margin:0 0 12px;font-size:15px">Chi phí bảo dưỡng theo tháng</h4>{{ bdCostBars }}</div>
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 16px"><h4 style="margin:0 0 14px;font-size:15px">Mức trễ/sớm theo bộ phận</h4><sc-for list="{{ devByDept }}" as="b" hint-placeholder-count="4"><div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px"><span>{{ b.label }}</span><span style="font-weight:600">{{ b.value }}</span></div><div style="height:8px;background:#eef0f3;border-radius:2px;overflow:hidden"><div style="height:100%;width:{{ b.pct }};background:{{ b.color }}"></div></div></div></sc-for></div>
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 16px"><h4 style="margin:0 0 14px;font-size:15px">Mức trễ/sớm theo hãng xe</h4><sc-for list="{{ devByBrand }}" as="b" hint-placeholder-count="6"><div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px"><span>{{ b.label }}</span><span style="font-weight:600">{{ b.value }}</span></div><div style="height:8px;background:#eef0f3;border-radius:2px;overflow:hidden"><div style="height:100%;width:{{ b.pct }};background:{{ b.color }}"></div></div></div></sc-for></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px"><h4 style="margin:0;font-size:15px">Top xe bảo dưỡng trễ hạn</h4><button type="button" class="btn btn-ghost" onClick="{{ onToggleLate }}" style="font-size:12px">{{ lateLabel }}</button></div>
+          <table class="table"><thead><tr><th>Biển số</th><th>Bộ phận</th><th>Hạng mục</th><th>Dự kiến</th><th>Trạng thái</th></tr></thead><tbody>
+            <sc-for list="{{ topLate }}" as="r" hint-placeholder-count="5"><tr><td style="font-weight:600;font-family:var(--font-heading)">{{ r.plate }}</td><td style="color:#5b636f">{{ r.dept }}</td><td>{{ r.item }}</td><td style="font-variant-numeric:tabular-nums">{{ r.due }}</td><td><span class="tag" style="{{ r.tagStyle }}">{{ r.tag }}</span></td></tr></sc-for>
+          </tbody></table>
+        </div>
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px"><h4 style="margin:0;font-size:15px">Top xe bảo dưỡng sớm</h4><button type="button" class="btn btn-ghost" onClick="{{ onToggleEarly }}" style="font-size:12px">{{ earlyLabel }}</button></div>
+          <table class="table"><thead><tr><th>Biển số</th><th>Bộ phận</th><th>Hạng mục</th><th>Dự kiến</th><th>Trạng thái</th></tr></thead><tbody>
+            <sc-for list="{{ topEarly }}" as="r" hint-placeholder-count="5"><tr><td style="font-weight:600;font-family:var(--font-heading)">{{ r.plate }}</td><td style="color:#5b636f">{{ r.dept }}</td><td>{{ r.item }}</td><td style="font-variant-numeric:tabular-nums">{{ r.due }}</td><td><span class="tag" style="{{ r.tagStyle }}">{{ r.tag }}</span></td></tr></sc-for>
+          </tbody></table>
+        </div>
+      </div>
+      <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px"><h4 style="margin:0;font-size:15px">Kế hoạch bảo dưỡng — xe đến lịch & trễ hạn</h4><button type="button" class="btn btn-secondary" onClick="{{ onExport }}" style="font-size:12.5px"><i class="ph-duotone ph-microsoft-excel-logo"></i>Xuất Excel</button></div>
+        <table class="table"><thead><tr><th>Biển số</th><th>Bộ phận</th><th>Hạng mục</th><th>Odo hiện tại</th><th>Mốc kế tiếp</th><th>Dự kiến</th><th>Trạng thái</th></tr></thead><tbody>
+          <sc-for list="{{ maintPlan }}" as="r" hint-placeholder-count="4"><tr><td style="font-weight:600;font-family:var(--font-heading)">{{ r.plate }}</td><td style="color:#5b636f">{{ r.dept }}</td><td>{{ r.item }}</td><td style="font-variant-numeric:tabular-nums">{{ r.odoNow }}</td><td style="font-variant-numeric:tabular-nums">{{ r.odoNext }}</td><td style="font-variant-numeric:tabular-nums">{{ r.due }}</td><td><span class="tag" style="{{ r.tagStyle }}">{{ r.tag }}</span></td></tr></sc-for>
+        </tbody></table>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ── 3·2 · THEO DÕI SỬA CHỮA ── -->
+    <sc-if value="{{ isRepairTrack }}">
+    <div style="animation:flt-fade .28s ease;display:flex;flex-direction:column;gap:20px">
+      <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px">
+        <sc-for list="{{ repairTrackKpis }}" as="k" hint-placeholder-count="6">
+          <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:15px 16px 13px;box-shadow:0 1px 2px rgba(22,30,50,.05);display:flex;flex-direction:column;gap:8px;min-width:0">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px"><div style="font:600 10px/1.35 var(--font-heading);letter-spacing:.04em;text-transform:uppercase;color:#7a828e">{{ k.label }}</div><div style="width:28px;height:28px;flex:none;border-radius:8px;background:{{ k.iconBg }};display:grid;place-items:center"><i class="ph-duotone ph-{{ k.icon }}" style="font-size:15px;color:{{ k.iconColor }}"></i></div></div>
+            <div style="font-family:var(--font-heading);font-weight:700;line-height:1.05;color:{{ k.numColor }};font-size:{{ k.numSize }};font-variant-numeric:tabular-nums;overflow-wrap:{{ k.numBreak }}">{{ k.value }}<span style="font-size:12px;font-weight:500;color:#9aa1ab;margin-left:3px">{{ k.unit }}</span></div>
+            <div style="font-size:11px;color:#9aa1ab">{{ k.sub }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;align-items:start">
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 16px"><h4 style="margin:0 0 14px;font-size:15px">Chi phí SC theo bộ phận</h4><sc-for list="{{ scByDeptBars }}" as="b" hint-placeholder-count="4"><div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px"><span>{{ b.label }}</span><span style="font-weight:600">{{ b.value }}</span></div><div style="height:8px;background:#eef0f3;border-radius:2px;overflow:hidden"><div style="height:100%;width:{{ b.pct }};background:{{ b.color }}"></div></div></div></sc-for></div>
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 16px"><h4 style="margin:0 0 14px;font-size:15px">Chi phí SC theo hãng xe</h4><sc-for list="{{ scByBrandBars }}" as="b" hint-placeholder-count="6"><div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px"><span>{{ b.label }}</span><span style="font-weight:600">{{ b.value }}</span></div><div style="height:8px;background:#eef0f3;border-radius:2px;overflow:hidden"><div style="height:100%;width:{{ b.pct }};background:{{ b.color }}"></div></div></div></sc-for></div>
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px"><h4 style="margin:0 0 12px;font-size:15px">Số lượng xe SC theo tháng</h4>{{ scCountBars }}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1.2fr;gap:16px;align-items:start">
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 16px"><h4 style="margin:0 0 14px;font-size:15px">Tần suất &amp; chi phí theo hạng mục</h4><table class="table"><thead><tr><th>Hạng mục</th><th style="text-align:right">Số lượt</th><th style="text-align:right">Chi phí</th></tr></thead><tbody><sc-for list="{{ catFreq }}" as="c" hint-placeholder-count="6"><tr><td>{{ c.label }}</td><td style="text-align:right;font-variant-numeric:tabular-nums">{{ c.count }}</td><td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:600">{{ c.cost }}</td></tr></sc-for></tbody></table></div>
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px"><h4 style="margin:0 0 12px;font-size:15px">Xu hướng chi phí sửa chữa theo tháng</h4>{{ scTrendBars }}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px"><h4 style="margin:0;font-size:15px">Top xe chi phí sửa chữa cao nhất</h4><button type="button" class="btn btn-ghost" onClick="{{ onToggleTopCost }}" style="font-size:12px">{{ topCostLabel }}</button></div>
+          <table class="table"><thead><tr><th>#</th><th>Biển số</th><th>Bộ phận</th><th style="text-align:right">Lượt</th><th style="text-align:right">Chi phí</th></tr></thead><tbody>
+            <sc-for list="{{ topCostList }}" as="r" hint-placeholder-count="8"><tr><td style="color:#9aa1ab;font-weight:600">{{ r.rank }}</td><td style="font-weight:600;font-family:var(--font-heading)">{{ r.plate }}</td><td style="color:#5b636f">{{ r.dept }}</td><td style="text-align:right;font-variant-numeric:tabular-nums">{{ r.count }}</td><td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:600">{{ r.value }}</td></tr></sc-for>
+          </tbody></table>
+        </div>
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px"><h4 style="margin:0;font-size:15px">Top xe sửa chữa nhiều lần</h4><button type="button" class="btn btn-ghost" onClick="{{ onToggleTopFreq }}" style="font-size:12px">{{ topFreqLabel }}</button></div>
+          <table class="table"><thead><tr><th>#</th><th>Biển số</th><th>Bộ phận</th><th style="text-align:right">Số lần</th><th style="text-align:right">Chi phí</th></tr></thead><tbody>
+            <sc-for list="{{ topFreqList }}" as="r" hint-placeholder-count="8"><tr><td style="color:#9aa1ab;font-weight:600">{{ r.rank }}</td><td style="font-weight:600;font-family:var(--font-heading)">{{ r.plate }}</td><td style="color:#5b636f">{{ r.dept }}</td><td style="text-align:right;font-variant-numeric:tabular-nums">{{ r.count }}</td><td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:600">{{ r.value }}</td></tr></sc-for>
+          </tbody></table>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ── 3·3 · PHIẾU BẢO DƯỠNG ── -->
+    <sc-if value="{{ isMaintTicket }}">
+    <div style="animation:flt-fade .28s ease;display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;max-width:1100px">
+      <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:22px 24px">
+        <h4 style="margin:0 0 16px;font-size:16px">Lập phiếu bảo dưỡng</h4>
+        <div class="field" style="margin-bottom:14px"><label>Biển số xe</label><input class="input" list="plate-list" placeholder="Nhập biển số…" value="{{ ticketPlate }}" onInput="{{ onTicketPlate }}"></div>
+        <sc-if value="{{ ticketVeh }}"><div style="display:flex;gap:10px;margin-bottom:14px;padding:11px 14px;background:#eef4ff;border-radius:8px;font-size:12.5px;color:#2f4a6b"><span><strong>Hãng/Model:</strong> {{ ticketVeh.brandModel }}</span><span>·</span><span><strong>Tải trọng:</strong> {{ ticketVeh.type }}</span><span>·</span><span><strong>Odo:</strong> {{ ticketVeh.odo }} km</span></div></sc-if>
+        <div style="display:flex;gap:12px;margin-bottom:14px"><div class="field" style="flex:1"><label>Ngày vào xưởng</label><input type="date" class="input"></div><div class="field" style="flex:1"><label>Gara thực hiện</label><input class="input" placeholder="Chọn gara…"></div></div>
+        <div class="field" style="margin-bottom:14px"><label>Hạng mục bảo dưỡng</label><input class="input" placeholder="VD: Thay dầu máy, lọc dầu, đảo lốp…"></div>
+        <div style="display:flex;gap:12px;margin-bottom:18px"><div class="field" style="flex:1"><label>Odo hiện tại (km)</label><input class="input" placeholder="0"></div><div class="field" style="flex:1"><label>Chi phí dự kiến (₫)</label><input class="input" placeholder="0"></div></div>
+        <div style="display:flex;gap:12px"><button type="button" class="btn btn-primary" onClick="{{ onExportPdf }}" style="background:#3b82f6;border-color:#3b82f6"><i class="ph-duotone ph-file-pdf"></i>Xuất phiếu PDF</button><button type="button" class="btn btn-secondary"><i class="ph-duotone ph-floppy-disk"></i>Lưu phiếu</button></div>
+      </div>
+      <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:26px 30px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #201e1d;padding-bottom:12px;margin-bottom:16px">
+          <div><div style="font:700 16px var(--font-heading)">PHIẾU BẢO DƯỠNG XE</div><div style="font-size:12px;color:#7a828e">FLEET OPS · Quản lý Đội xe</div></div>
+          <div style="text-align:right;font-size:11px;color:#7a828e">Số phiếu<br><strong style="font-size:13px;color:#201e1d">BD-2026-0142</strong></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;font-size:13px">
+          <div style="display:flex;justify-content:space-between;border-bottom:1px solid #f0f1f4;padding:6px 0"><span style="color:#9aa1ab">Biển số</span><span style="font-weight:600">{{ ticketPlate }}</span></div>
+          <div style="display:flex;justify-content:space-between;border-bottom:1px solid #f0f1f4;padding:6px 0"><span style="color:#9aa1ab">Ngày</span><span style="font-weight:600">21/07/2026</span></div>
+          <div style="display:flex;justify-content:space-between;border-bottom:1px solid #f0f1f4;padding:6px 0"><span style="color:#9aa1ab">Hãng / Model</span><span style="font-weight:600">{{ ticketVeh.brandModel }}</span></div>
+          <div style="display:flex;justify-content:space-between;border-bottom:1px solid #f0f1f4;padding:6px 0"><span style="color:#9aa1ab">Tải trọng</span><span style="font-weight:600">{{ ticketVeh.type }}</span></div>
+        </div>
+        <div style="margin-top:20px;font-size:12px;color:#9aa1ab;font-style:italic">Xem trước phiếu — nhập biển số để tự động điền thông tin xe, sau đó bấm “Xuất phiếu PDF”.</div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ── 3·4 · SỬA CHỮA DỌC ĐƯỜNG ── -->
+    <sc-if value="{{ isRoadside }}">
+    <div style="animation:flt-fade .28s ease;display:flex;flex-direction:column;gap:20px">
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px">
+        <sc-for list="{{ rsKpis }}" as="k" hint-placeholder-count="4">
+          <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:16px 18px 14px;box-shadow:0 1px 2px rgba(22,30,50,.05);display:flex;flex-direction:column;gap:8px;min-width:0">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px"><div style="font:600 10.5px/1.35 var(--font-heading);letter-spacing:.04em;text-transform:uppercase;color:#7a828e">{{ k.label }}</div><div style="width:30px;height:30px;flex:none;border-radius:8px;background:{{ k.iconBg }};display:grid;place-items:center"><i class="ph-duotone ph-{{ k.icon }}" style="font-size:16px;color:{{ k.iconColor }}"></i></div></div>
+            <div style="font-family:var(--font-heading);font-weight:700;line-height:1.08;color:{{ k.numColor }};font-size:{{ k.numSize }};font-variant-numeric:tabular-nums;overflow-wrap:{{ k.numBreak }}">{{ k.value }}</div>
+            <div style="font-size:11px;color:#9aa1ab">{{ k.sub }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:16px;align-items:start">
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px">
+          <h4 style="margin:0 0 12px;font-size:15px">Nhật ký sửa chữa dọc đường</h4>
+          <table class="table"><thead><tr><th>Ngày</th><th>Biển số</th><th>Bộ phận</th><th>Hạng mục</th><th>Vị trí</th><th style="text-align:right">Chi phí</th></tr></thead><tbody>
+            <sc-for list="{{ rsRows }}" as="r" hint-placeholder-count="6"><tr><td style="font-variant-numeric:tabular-nums;white-space:nowrap">{{ r.date }}</td><td style="font-weight:600;font-family:var(--font-heading)">{{ r.plate }}</td><td style="color:#5b636f">{{ r.dept }}</td><td>{{ r.item }}</td><td style="color:#5b636f;font-size:12px">{{ r.loc }}</td><td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:600">{{ r.cost }}</td></tr></sc-for>
+          </tbody></table>
+        </div>
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 16px"><h4 style="margin:0 0 14px;font-size:15px">Chi phí theo hạng mục</h4><sc-for list="{{ rsByItem }}" as="b" hint-placeholder-count="6"><div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px"><span>{{ b.label }}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">{{ b.value }}</span></div><div style="height:9px;background:#eef0f3;border-radius:2px;overflow:hidden"><div style="height:100%;width:{{ b.pct }};background:{{ b.color }}"></div></div></div></sc-for></div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ── 4 · HIỆU SUẤT ── -->
+    <sc-if value="{{ isPerformance }}">
+    <div style="animation:flt-fade .28s ease;display:flex;flex-direction:column;gap:20px">
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px">
+        <sc-for list="{{ perfKpis2 }}" as="k" hint-placeholder-count="4">
+          <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:16px 16px 14px;box-shadow:0 1px 2px rgba(22,30,50,.05);display:flex;flex-direction:column;gap:8px;min-width:0">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px"><div style="font:600 10px/1.35 var(--font-heading);letter-spacing:.04em;text-transform:uppercase;color:#7a828e">{{ k.label }}</div><div style="width:30px;height:30px;flex:none;border-radius:8px;background:{{ k.iconBg }};display:grid;place-items:center"><i class="ph-duotone ph-{{ k.icon }}" style="font-size:16px;color:{{ k.iconColor }}"></i></div></div>
+            <div style="font-family:var(--font-heading);font-weight:700;line-height:1.05;color:{{ k.numColor }};font-size:{{ k.numSize }};font-variant-numeric:tabular-nums;overflow-wrap:{{ k.numBreak }}">{{ k.value }}<span style="font-size:13px;font-weight:500;color:#9aa1ab;margin-left:3px">{{ k.unit }}</span></div>
+            <div style="font-size:11px;color:#9aa1ab">{{ k.sub }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px"><h4 style="margin:0 0 14px;font-size:15px">Tiêu hao nhiên liệu (L/100km)</h4>
+          <sc-for list="{{ fuelBars }}" as="f" hint-placeholder-count="8"><div style="display:flex;align-items:center;gap:12px;margin-bottom:8px"><span style="width:88px;flex:none;font-size:12px;font-family:var(--font-heading)">{{ f.plate }}</span><div style="flex:1;height:12px;background:#eef0f3;border-radius:2px;overflow:hidden"><div style="height:100%;width:{{ f.pct }};background:{{ f.color }}"></div></div><span style="width:48px;text-align:right;font-size:12px;font-variant-numeric:tabular-nums;font-weight:600">{{ f.value }}</span></div></sc-for>
+        </div>
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px"><h4 style="margin:0 0 14px;font-size:15px">Tỷ lệ sẵn sàng (uptime %)</h4>
+          <sc-for list="{{ uptimeBars }}" as="f" hint-placeholder-count="8"><div style="display:flex;align-items:center;gap:12px;margin-bottom:8px"><span style="width:88px;flex:none;font-size:12px;font-family:var(--font-heading)">{{ f.plate }}</span><div style="flex:1;height:12px;background:#eef0f3;border-radius:2px;overflow:hidden"><div style="height:100%;width:{{ f.pct }};background:{{ f.color }}"></div></div><span style="width:48px;text-align:right;font-size:12px;font-variant-numeric:tabular-nums;font-weight:600">{{ f.value }}%</span></div></sc-for>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px">
+          <h4 style="margin:0 0 12px;font-size:15px">Top 20 xe hiệu suất tốt nhất</h4>
+          <table class="table"><thead><tr><th>#</th><th>Biển số</th><th style="text-align:right">Uptime</th><th style="text-align:right">Điểm</th><th>Đánh giá</th></tr></thead><tbody>
+            <sc-for list="{{ top20Good }}" as="p" hint-placeholder-count="8"><tr><td style="color:#9aa1ab;font-weight:600">{{ p.rank }}</td><td style="font-weight:600;font-family:var(--font-heading)">{{ p.plate }}</td><td style="text-align:right;font-variant-numeric:tabular-nums">{{ p.uptime }}%</td><td style="text-align:right;font-weight:700;color:{{ p.scoreColor }}">{{ p.score }}</td><td><span class="tag" style="{{ p.bandStyle }}">{{ p.band }}</span></td></tr></sc-for>
+          </tbody></table>
+        </div>
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px">
+          <h4 style="margin:0 0 12px;font-size:15px">Top 20 xe hiệu suất kém nhất</h4>
+          <table class="table"><thead><tr><th>#</th><th>Biển số</th><th style="text-align:right">Uptime</th><th style="text-align:right">Điểm</th><th>Đánh giá</th></tr></thead><tbody>
+            <sc-for list="{{ top20Bad }}" as="p" hint-placeholder-count="8"><tr><td style="color:#9aa1ab;font-weight:600">{{ p.rank }}</td><td style="font-weight:600;font-family:var(--font-heading)">{{ p.plate }}</td><td style="text-align:right;font-variant-numeric:tabular-nums">{{ p.uptime }}%</td><td style="text-align:right;font-weight:700;color:{{ p.scoreColor }}">{{ p.score }}</td><td><span class="tag" style="{{ p.bandStyle }}">{{ p.band }}</span></td></tr></sc-for>
+          </tbody></table>
+        </div>
+      </div>
+      <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px"><h4 style="margin:0;font-size:15px">Bảng xếp hạng toàn đội — chấm điểm sức khỏe</h4><button type="button" class="btn btn-secondary" onClick="{{ onExport }}" style="font-size:12.5px"><i class="ph-duotone ph-microsoft-excel-logo"></i>Xuất Excel</button></div>
+        <table class="table"><thead><tr><th>#</th><th>Biển số</th><th>Bộ phận</th><th style="text-align:right">Km/tháng</th><th style="text-align:right">L/100km</th><th style="text-align:right">Uptime</th><th style="text-align:right">Chi phí/km</th><th style="text-align:right">Điểm</th><th>Đánh giá</th></tr></thead><tbody>
+          <sc-for list="{{ perfRankFull }}" as="p" hint-placeholder-count="14"><tr><td style="color:#9aa1ab;font-weight:600">{{ p.rank }}</td><td style="font-weight:600;font-family:var(--font-heading)">{{ p.plate }}</td><td style="color:#5b636f">{{ p.dept }}</td><td style="text-align:right;font-variant-numeric:tabular-nums">{{ p.km }}</td><td style="text-align:right;font-variant-numeric:tabular-nums">{{ p.fuel }}</td><td style="text-align:right;font-variant-numeric:tabular-nums">{{ p.uptime }}%</td><td style="text-align:right;font-variant-numeric:tabular-nums">{{ p.costKm }}</td><td style="text-align:right;font-weight:700;color:{{ p.scoreColor }}">{{ p.score }}</td><td><span class="tag" style="{{ p.bandStyle }}">{{ p.band }}</span></td></tr></sc-for>
+        </tbody></table>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ── 4·1 · ĐIỂM SỨC KHỎE XE ── -->
+    <sc-if value="{{ isHealthScore }}">
+    <div style="animation:flt-fade .28s ease;display:flex;flex-direction:column;gap:20px">
+      <div style="display:grid;grid-template-columns:320px 1fr;gap:16px;align-items:stretch">
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center">
+          <h4 style="margin:0 0 4px;font-size:15px">Điểm sức khỏe trung bình đội</h4>
+          <div>{{ fleetGauge }}</div>
+          <span class="tag" style="background:{{ avgScoreColor }}22;color:{{ avgScoreColor }};font-size:13px;margin-top:4px">{{ avgScoreBand }}</span>
+        </div>
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:20px 24px;display:flex;flex-direction:column;gap:16px">
+          <h4 style="margin:0;font-size:15px">Công thức Vehicle Health Score (thang 100)</h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 28px">
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px solid #f0f1f4"><span>Tuân thủ bảo dưỡng</span><span style="font-weight:700;color:#3b82f6">40%</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px solid #f0f1f4"><span>Tần suất sửa chữa</span><span style="font-weight:700;color:#3b82f6">20%</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px solid #f0f1f4"><span>Chi phí / km</span><span style="font-weight:700;color:#3b82f6">15%</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px solid #f0f1f4"><span>Downtime tại gara</span><span style="font-weight:700;color:#3b82f6">10%</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px solid #f0f1f4"><span>Downtime nằm bãi</span><span style="font-weight:700;color:#3b82f6">5%</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-bottom:1px solid #f0f1f4"><span>Uptime vận hành</span><span style="font-weight:700;color:#3b82f6">10%</span></div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px 18px">
+            <sc-for list="{{ scoreLegend }}" as="s" hint-placeholder-count="4"><div style="display:flex;align-items:center;gap:7px"><span style="width:11px;height:11px;border-radius:3px;background:{{ s.color }}"></span><span style="font-size:12px;color:#5b636f">{{ s.label }} · <strong>{{ s.value }}</strong> xe</span></div></sc-for>
+          </div>
+        </div>
+      </div>
+      <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px">
+        <h4 style="margin:0 0 12px;font-size:15px">Bảng điểm sức khỏe toàn đội</h4>
+        <table class="table"><thead><tr><th>#</th><th>Biển số</th><th>Bộ phận</th><th style="text-align:right">Tuân thủ BD</th><th style="text-align:right">Tần suất SC</th><th style="text-align:right">Chi phí/km</th><th style="text-align:right">Điểm</th><th>Xếp loại</th></tr></thead><tbody>
+          <sc-for list="{{ scoredSort }}" as="v" hint-placeholder-count="14"><tr style="cursor:pointer" onClick="{{ v.open }}"><td style="color:#9aa1ab;font-weight:600">{{ v.rank }}</td><td style="font-weight:600;font-family:var(--font-heading)">{{ v.plate }}</td><td style="color:#5b636f">{{ v.dept }}</td><td style="text-align:right;font-variant-numeric:tabular-nums">{{ v.comp }}</td><td style="text-align:right;font-variant-numeric:tabular-nums">{{ v.freq }}</td><td style="text-align:right;font-variant-numeric:tabular-nums">{{ v.costKm }}</td><td style="text-align:right;font-weight:700;color:{{ v.scoreColor }}">{{ v.score }}</td><td><span class="tag" style="{{ v.bandStyle }}">{{ v.band }}</span></td></tr></sc-for>
+        </tbody></table>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ── 5 · HỒ SƠ CHI TIẾT XE ── -->
+    <sc-if value="{{ isVehicleDetail }}">
+    <div style="animation:flt-fade .28s ease;display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;align-items:center;gap:14px">
+        <span style="font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#7a828e">Chọn phương tiện</span>
+        <select class="input" style="max-width:260px" value="{{ profile.plate }}" onChange="{{ onSelectVeh }}"><sc-for list="{{ vehicles }}" as="v" hint-placeholder-count="14"><option value="{{ v.plate }}">{{ v.plate }} — {{ v.brandModel }}</option></sc-for></select>
+      </div>
+      <div style="display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start">
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:16px">
+            <div class="halftone" style="aspect-ratio:4/3;background:#e4e7ec;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;margin-bottom:10px;position:relative">
+              <i class="ph-duotone ph-truck" style="font-size:60px;color:#aab2bd"></i>
+              <span style="font-size:12px;color:#8b929c">Ảnh {{ profile.slideNo }}/5 · {{ profile.curSlide }}</span>
+              <span style="position:absolute;top:8px;right:10px;font-size:10px;color:#aab2bd"><i class="ph-duotone ph-image"></i> Kéo-thả ảnh</span>
+            </div>
+            <div style="display:flex;gap:7px;justify-content:center">
+              <sc-for list="{{ profile.slides }}" as="s" hint-placeholder-count="5"><button type="button" onClick="{{ s.go }}" title="{{ s.label }}" style="width:44px;height:34px;border-radius:5px;border:1px solid {{ s.borderColor }};background:#eef0f3;cursor:pointer;display:grid;place-items:center"><i class="ph-duotone ph-image" style="font-size:14px;color:{{ s.dot }}"></i></button></sc-for>
+            </div>
+          </div>
+          <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px">
+            <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:3px"><h2 style="margin:0;font-size:24px">{{ profile.plate }}</h2><span class="tag" style="{{ profile.statusStyle }}">{{ profile.statusLabel }}</span></div>
+            <div style="font-size:13px;font-style:italic;color:#7a828e;margin-bottom:12px">{{ profile.brandModel }} · {{ profile.type }} · {{ profile.year }}</div>
+            <sc-for list="{{ profile.specs }}" as="s" hint-placeholder-count="8"><div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f1f4;font-size:13px"><span style="color:#7a828e">{{ s.k }}</span><span style="font-weight:600">{{ s.v }}</span></div></sc-for>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div style="display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:stretch">
+            <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px">
+              <h4 style="margin:0 0 14px;font-size:15px">Chỉ số vận hành</h4>
+              <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px">
+                <sc-for list="{{ profile.metrics }}" as="m" hint-placeholder-count="4"><div style="display:flex;flex-direction:column;gap:3px"><div style="font:400 10px/1.3 var(--font-heading);letter-spacing:.05em;text-transform:uppercase;color:#7a828e">{{ m.label }}</div><div style="font:700 24px/1 var(--font-heading)">{{ m.value }}<span style="font-size:12px;font-weight:400;color:#9aa1ab;margin-left:2px">{{ m.unit }}</span></div></div></sc-for>
+              </div>
+              <div style="margin-top:16px;padding-top:14px;border-top:1px solid #f0f1f4;display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:#7a828e">Tổng chi phí BD-SC tích lũy</span><span style="font:700 18px var(--font-heading);color:#e5484d">{{ pvTotalCostFmt }}</span></div>
+            </div>
+            <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;align-items:center;text-align:center">
+              <h4 style="margin:0 0 2px;font-size:14px">Điểm sức khỏe</h4>
+              <div>{{ profile.gauge }}</div>
+              <span class="tag" style="background:{{ profile.bandColor }}22;color:{{ profile.bandColor }};margin-top:2px">{{ profile.band }}</span>
+            </div>
+          </div>
+          <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px">
+            <h4 style="margin:0 0 12px;font-size:15px">Chi tiết điểm theo trọng số</h4>
+            <sc-for list="{{ profile.scoreRows }}" as="r" hint-placeholder-count="6"><div style="display:flex;align-items:center;gap:12px;margin-bottom:9px"><span style="width:150px;flex:none;font-size:12.5px">{{ r.k }} <span style="color:#9aa1ab">({{ r.w }})</span></span><div style="flex:1;height:10px;background:#eef0f3;border-radius:2px;overflow:hidden"><div style="height:100%;width:{{ r.v }}%;background:#3b82f6"></div></div><span style="width:34px;text-align:right;font-size:12.5px;font-weight:600">{{ r.v }}</span></div></sc-for>
+          </div>
+          <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px">
+            <h4 style="margin:0 0 14px;font-size:15px">Hồ sơ giấy tờ (7 mục)</h4>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+              <sc-for list="{{ profile.docImgs }}" as="d" hint-placeholder-count="7"><div class="halftone" style="aspect-ratio:3/4;background:#eef0f3;border:1px solid #e4e7ec;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px"><i class="ph-duotone ph-file-text" style="font-size:24px;color:#aab2bd"></i><span style="font-size:10px;color:#7a828e;text-align:center;padding:0 4px">{{ d }}</span></div></sc-for>
+            </div>
+          </div>
+          <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px">
+            <h4 style="margin:0 0 14px;font-size:15px">Timeline bảo dưỡng · sửa chữa · lốp · ắc quy</h4>
+            <sc-if value="{{ profileNoHistory }}"><div style="font-size:13px;font-style:italic;color:#9aa1ab">Chưa có lịch sử cho phương tiện này.</div></sc-if>
+            <div style="display:flex;flex-direction:column">
+              <sc-for list="{{ profileTimeline }}" as="t" hint-placeholder-count="4">
+                <div style="display:flex;gap:14px">
+                  <div style="display:flex;flex-direction:column;align-items:center;flex:none"><span style="width:32px;height:32px;border-radius:50%;background:{{ t.color }}1c;display:grid;place-items:center"><i class="ph-duotone ph-{{ t.icon }}" style="font-size:15px;color:{{ t.color }}"></i></span><span style="flex:1;width:2px;background:#eef0f3;margin:2px 0"></span></div>
+                  <div style="flex:1;padding-bottom:16px"><div style="display:flex;justify-content:space-between;gap:10px"><span style="font:600 13.5px var(--font-heading)">{{ t.title }}</span><span style="font-size:12px;font-weight:600;color:#e5484d;white-space:nowrap">{{ t.cost }}</span></div><div style="font-size:11.5px;color:#9aa1ab">{{ t.date }} · {{ t.meta }}</div></div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ── 5·1 · SO SÁNH ĐỘI XE ── -->
+    <sc-if value="{{ isFleetCompare }}">
+    <div style="animation:flt-fade .28s ease;display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:14px 18px">
+        <span style="font:600 13px var(--font-heading)">Nhóm so sánh:</span>
+        <div class="seg"><sc-for list="{{ cmpModeOpts }}" as="o" hint-placeholder-count="5"><label class="seg-opt" style="{{ o.segStyle }}"><input type="radio" name="cmpmode" onClick="{{ o.onClick }}"><span>{{ o.label }}</span></label></sc-for></div>
+        <div style="flex:1"></div>
+        <span style="font-size:12.5px;color:#7a828e">Xe gốc <strong style="color:#3f4655">{{ cmpBasePlate }}</strong> · nhóm <strong style="color:#3f4655">{{ cmpPoolCount }}</strong> xe</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start">
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px"><h4 style="margin:0 0 12px;font-size:15px">Top 20 chi phí sửa chữa cao</h4><table class="table"><thead><tr><th>#</th><th>Biển số</th><th>Bộ phận</th><th style="text-align:right">Chi phí</th></tr></thead><tbody><sc-for list="{{ cmpTopCost }}" as="r" hint-placeholder-count="8"><tr><td style="color:#9aa1ab;font-weight:600">{{ r.rank }}</td><td style="font-weight:600;font-family:var(--font-heading)">{{ r.plate }}</td><td style="color:#5b636f">{{ r.dept }}</td><td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:600">{{ r.value }}</td></tr></sc-for></tbody></table></div>
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px"><h4 style="margin:0 0 12px;font-size:15px">Top 20 sửa chữa nhiều lần</h4><table class="table"><thead><tr><th>#</th><th>Biển số</th><th>Bộ phận</th><th style="text-align:right">Số lần</th></tr></thead><tbody><sc-for list="{{ cmpTopFreq }}" as="r" hint-placeholder-count="8"><tr><td style="color:#9aa1ab;font-weight:600">{{ r.rank }}</td><td style="font-weight:600;font-family:var(--font-heading)">{{ r.plate }}</td><td style="color:#5b636f">{{ r.dept }}</td><td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:600">{{ r.value }}</td></tr></sc-for></tbody></table></div>
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px"><h4 style="margin:0 0 12px;font-size:15px">Top 20 chi phí/km cao</h4><table class="table"><thead><tr><th>#</th><th>Biển số</th><th>Bộ phận</th><th style="text-align:right">Chi phí/km</th></tr></thead><tbody><sc-for list="{{ cmpTopCostKm }}" as="r" hint-placeholder-count="8"><tr><td style="color:#9aa1ab;font-weight:600">{{ r.rank }}</td><td style="font-weight:600;font-family:var(--font-heading)">{{ r.plate }}</td><td style="color:#5b636f">{{ r.dept }}</td><td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:600">{{ r.value }}</td></tr></sc-for></tbody></table></div>
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px"><h4 style="margin:0 0 12px;font-size:15px">Top 20 ngày nằm gara</h4><table class="table"><thead><tr><th>#</th><th>Biển số</th><th>Bộ phận</th><th style="text-align:right">Nằm gara</th></tr></thead><tbody><sc-for list="{{ cmpTopGara }}" as="r" hint-placeholder-count="8"><tr><td style="color:#9aa1ab;font-weight:600">{{ r.rank }}</td><td style="font-weight:600;font-family:var(--font-heading)">{{ r.plate }}</td><td style="color:#5b636f">{{ r.dept }}</td><td style="text-align:right;font-variant-numeric:tabular-nums;font-weight:600">{{ r.value }}</td></tr></sc-for></tbody></table></div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ── 5·2 · TRA CỨU BIỂN SỐ ── -->
+    <sc-if value="{{ isPlateLookup }}">
+    <div style="animation:flt-fade .28s ease;display:flex;flex-direction:column;gap:18px">
+      <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="position:relative;flex:1;min-width:240px;max-width:360px"><i class="ph-duotone ph-magnifying-glass" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;color:#9aa1ab"></i><input class="input" list="plate-list" placeholder="Nhập biển số hoặc 5 số cuối…" value="{{ lookupInput }}" onInput="{{ onLookupInput }}" style="padding-left:34px"></div>
+        <button type="button" class="btn btn-primary" onClick="{{ onLookupGo }}" style="background:#3b82f6;border-color:#3b82f6"><i class="ph-duotone ph-magnifying-glass"></i>Tra cứu</button>
+        <button type="button" class="btn btn-secondary" onClick="{{ onOcr }}"><i class="ph-duotone ph-camera"></i>OCR</button>
+        <button type="button" class="btn btn-secondary" onClick="{{ onVoice }}"><i class="ph-duotone ph-microphone"></i>Giọng nói</button>
+      </div>
+      <sc-if value="{{ lookup }}" hint-placeholder-val="{{ true }}">
+      <div style="display:grid;grid-template-columns:320px 1fr;gap:16px;align-items:start">
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:20px">
+          <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:3px"><h2 style="margin:0;font-size:24px">{{ lookup.plate }}</h2><span class="tag" style="{{ lookup.statusStyle }}">{{ lookup.statusLabel }}</span></div>
+          <div style="font-size:13px;font-style:italic;color:#7a828e;margin-bottom:14px">{{ lookup.brandModel }} · {{ lookup.type }} · {{ lookup.year }}</div>
+          <div style="display:flex;align-items:center;gap:10px;padding:12px;background:{{ lookup.bandBg }};border-radius:8px;margin-bottom:14px"><i class="ph-duotone ph-heartbeat" style="font-size:22px;color:{{ lookup.bandColor }}"></i><div><div style="font:700 22px var(--font-heading);color:{{ lookup.bandColor }};line-height:1">{{ lookup.score }}<span style="font-size:12px;font-weight:400;color:#7a828e">/100</span></div><div style="font-size:11px;color:{{ lookup.bandColor }};font-weight:600">{{ lookup.band }}</div></div></div>
+          <div style="display:flex;flex-direction:column;font-size:13px">
+            <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f1f4"><span style="color:#7a828e">Bộ phận</span><span style="font-weight:600">{{ lookup.dept }}</span></div>
+            <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f1f4"><span style="color:#7a828e">Tài xế</span><span style="font-weight:600">{{ lookup.driver }}</span></div>
+            <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f0f1f4"><span style="color:#7a828e">Số ODO</span><span style="font-weight:600">{{ lookup.odo }}</span></div>
+          </div>
+          <h4 style="margin:16px 0 8px;font-size:14px">Giấy tờ &amp; hạn</h4>
+          <table class="table"><tbody><sc-for list="{{ lookup.docs }}" as="d" hint-placeholder-count="3"><tr><td>{{ d.k }}</td><td style="font-variant-numeric:tabular-nums">{{ d.date }}</td><td><span class="tag" style="{{ d.statusStyle }}">{{ d.statusLabel }}</span></td></tr></sc-for></tbody></table>
+        </div>
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:20px 24px">
+          <h4 style="margin:0 0 16px;font-size:15px">Timeline sự kiện (bảo dưỡng · sửa chữa · dọc đường)</h4>
+          <sc-if value="{{ lookup.noHistory }}"><div style="font-size:13px;font-style:italic;color:#9aa1ab">Chưa có sự kiện nào.</div></sc-if>
+          <div style="display:flex;flex-direction:column">
+            <sc-for list="{{ lookup.timeline }}" as="t" hint-placeholder-count="5">
+              <div style="display:flex;gap:14px">
+                <div style="display:flex;flex-direction:column;align-items:center;flex:none"><span style="width:34px;height:34px;border-radius:50%;background:{{ t.color }}1c;display:grid;place-items:center"><i class="ph-duotone ph-{{ t.icon }}" style="font-size:16px;color:{{ t.color }}"></i></span><span style="flex:1;width:2px;background:#eef0f3;margin:2px 0"></span></div>
+                <div style="flex:1;padding-bottom:18px"><div style="display:flex;justify-content:space-between;gap:10px"><span style="font:600 14px var(--font-heading)">{{ t.title }}</span><span style="font-size:12.5px;font-weight:600;color:#e5484d;white-space:nowrap">{{ t.cost }}</span></div><div style="font-size:12px;color:#9aa1ab">{{ t.date }} · {{ t.meta }}</div></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+      <sc-if value="{{ lookupNotFound }}"><div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:40px;text-align:center;color:#9aa1ab"><i class="ph-duotone ph-car-simple" style="font-size:44px"></i><div style="margin-top:10px;font-size:14px">Không tìm thấy phương tiện. Thử nhập biển số khác.</div></div></sc-if>
+    </div>
+    </sc-if>
+
+    <!-- ── 6 · BÁO CÁO ── -->
+    <sc-if value="{{ isReports }}">
+    <div style="animation:flt-fade .28s ease;display:flex;flex-direction:column;gap:18px">
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:14px 18px">
+        <div class="seg"><sc-for list="{{ reportKindOpts }}" as="o" hint-placeholder-count="2"><label class="seg-opt" style="{{ o.segStyle }}"><input type="radio" name="rk" onClick="{{ o.onClick }}"><span>{{ o.label }}</span></label></sc-for></div>
+        <span style="font-size:12.5px;color:#7a828e">Kỳ: <strong style="color:#3f4655">{{ reportRangeLabel }}</strong></span>
+        <div style="flex:1"></div>
+        <button type="button" class="btn btn-secondary" onClick="{{ onExportPdf }}"><i class="ph-duotone ph-file-pdf"></i>Xuất PDF</button>
+        <button type="button" class="btn btn-primary" onClick="{{ onExport }}" style="background:#3b82f6;border-color:#3b82f6"><i class="ph-duotone ph-microsoft-excel-logo"></i>Xuất Excel</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px">
+        <sc-for list="{{ rpKpis }}" as="k" hint-placeholder-count="6">
+          <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:15px 16px 13px;box-shadow:0 1px 2px rgba(22,30,50,.05);display:flex;flex-direction:column;gap:6px;min-width:0">
+            <div style="font:600 10px/1.35 var(--font-heading);letter-spacing:.04em;text-transform:uppercase;color:#7a828e">{{ k.label }}</div>
+            <div style="font:700 21px/1.05 var(--font-heading);font-variant-numeric:tabular-nums;overflow-wrap:anywhere">{{ k.value }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px"><h4 style="margin:0 0 12px;font-size:15px">Quãng đường theo kỳ</h4>{{ rpKmBars }}</div>
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px"><h4 style="margin:0 0 12px;font-size:15px">Chi phí BD-SC theo kỳ</h4>{{ rpCostBars }}</div>
+      </div>
+      <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px">
+        <h4 style="margin:0 0 12px;font-size:15px">Danh sách xe trong kỳ</h4>
+        <table class="table"><thead><tr><th>Biển số</th><th>Bộ phận</th><th style="text-align:right">Km</th><th style="text-align:right">Chi phí BD-SC</th><th>Trạng thái</th></tr></thead><tbody>
+          <sc-for list="{{ rpRows }}" as="r" hint-placeholder-count="14"><tr><td style="font-weight:600;font-family:var(--font-heading)">{{ r.plate }}</td><td style="color:#5b636f">{{ r.dept }}</td><td style="text-align:right;font-variant-numeric:tabular-nums">{{ r.km }}</td><td style="text-align:right;font-variant-numeric:tabular-nums">{{ r.cost }}</td><td><span class="tag" style="{{ r.statusStyle }}">{{ r.statusLabel }}</span></td></tr></sc-for>
+        </tbody></table>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ── 7 · DỰ BÁO AI & CẢNH BÁO ── -->
+    <sc-if value="{{ isAI }}">
+    <div style="animation:flt-fade .28s ease;display:flex;flex-direction:column;gap:18px">
+      <div style="background:linear-gradient(120deg,#141c2e,#25324e);border-radius:12px;padding:20px 24px;color:#e8ecf4;display:flex;gap:16px;align-items:flex-start">
+        <div style="width:40px;height:40px;flex:none;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#7c5cfc);display:grid;place-items:center"><i class="ph-duotone ph-sparkle" style="font-size:21px;color:#fff"></i></div>
+        <div><div style="font:600 15px var(--font-heading);margin-bottom:5px">Tóm tắt tình trạng đội xe (AI)</div><p style="margin:0;font-size:13.5px;line-height:1.6;color:#c3c9d6">{{ aiSummary }}</p></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px">
+          <h4 style="margin:0 0 4px;font-size:15px">Phân tích xe chi phí cao</h4>
+          <div style="font-size:12px;color:#9aa1ab;margin-bottom:14px">AI phân tích nguyên nhân chi phí vượt trung bình</div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <sc-for list="{{ highCost }}" as="c" hint-placeholder-count="3"><div style="display:flex;gap:11px;padding:12px 14px;background:#fef2f2;border-radius:9px"><i class="ph-duotone ph-warning-diamond" style="font-size:18px;color:#e5484d;flex:none;margin-top:1px"></i><div><div style="font:600 13.5px var(--font-heading)">{{ c.plate }}</div><div style="font-size:12px;color:#7a828e;line-height:1.5">{{ c.reason }}</div></div></div></sc-for>
+          </div>
+        </div>
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px">
+          <h4 style="margin:0 0 4px;font-size:15px">Dự báo nguy cơ hỏng 30 ngày tới</h4>
+          <div style="font-size:12px;color:#9aa1ab;margin-bottom:14px">Dựa trên ODO, lịch sử sửa chữa &amp; điểm sức khỏe</div>
+          <table class="table"><thead><tr><th>Biển số</th><th style="text-align:right">Điểm</th><th>Rủi ro</th><th>Nguyên nhân</th></tr></thead><tbody>
+            <sc-for list="{{ riskVehicles }}" as="r" hint-placeholder-count="4"><tr><td style="font-weight:600;font-family:var(--font-heading)">{{ r.plate }}</td><td style="text-align:right;font-weight:700;color:{{ r.bandStyle.color }}">{{ r.score }}</td><td><span class="tag" style="{{ r.riskStyle }}">{{ r.risk }}</span></td><td style="font-size:12px;color:#5b636f">{{ r.reason }}</td></tr></sc-for>
+          </tbody></table>
+        </div>
+      </div>
+      <div>
+        <h4 style="margin:0 0 12px;font-size:15px">Khuyến nghị ưu tiên của AI</h4>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+          <sc-for list="{{ aiRecs }}" as="r" hint-placeholder-count="3"><div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px"><div style="display:flex;align-items:center;gap:9px;margin-bottom:8px"><span style="width:32px;height:32px;border-radius:8px;background:#eef4ff;display:grid;place-items:center"><i class="ph-duotone ph-{{ r.icon }}" style="font-size:17px;color:#3b82f6"></i></span><span style="font:600 14px var(--font-heading)">{{ r.title }}</span></div><p style="margin:0;font-size:12.5px;color:#5b636f;line-height:1.6">{{ r.body }}</p></div></sc-for>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr;gap:16px">
+        <div style="background:#fff;border:1px solid #e7e9ec;border-radius:12px;padding:18px 20px 20px">
+          <h4 style="margin:0 0 12px;font-size:15px">Cảnh báo thông minh &amp; hư hỏng lặp lại</h4>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <sc-for list="{{ aiAlerts }}" as="a" hint-placeholder-count="5"><div style="display:flex;gap:11px;padding:12px 14px;border:1px solid #f0f1f4;border-left:3px solid {{ a.bar }};border-radius:8px"><i class="ph-duotone ph-{{ a.icon }}" style="font-size:18px;color:{{ a.bar }};flex:none;margin-top:1px"></i><div style="flex:1"><div style="display:flex;align-items:center;gap:8px"><span style="font:600 13.5px var(--font-heading)">{{ a.title }}</span><span class="tag" style="{{ a.tagStyle }}">{{ a.sevLabel }}</span></div><div style="font-size:12.5px;color:#5b636f;line-height:1.5;margin-top:2px">{{ a.body }}</div></div></div></sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ── 8 · CÀI ĐẶT ── -->
+    <sc-if value="{{ isSettings }}">
+    <div style="animation:flt-fade .28s ease;max-width:820px;display:flex;flex-direction:column;gap:32px">
+      <div>
+        <h4 style="margin:0 0 4px">Định mức kỹ thuật</h4>
+        <div style="font-size:12px;font-style:italic;color:#7a828e;margin-bottom:14px">Thay đổi áp dụng realtime cho toàn bộ cảnh báo &amp; điểm sức khỏe</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
+          <div class="field"><label>Định mức lốp (km)</label><input class="input" value="{{ norm.tire }}" onInput="{{ onNormTire }}"></div>
+          <div class="field"><label>Định mức ắc quy (km)</label><input class="input" value="{{ norm.battery }}" onInput="{{ onNormBattery }}"></div>
+          <div class="field"><label>Định mức bảo dưỡng (km)</label><input class="input" value="{{ norm.service }}" onInput="{{ onNormService }}"></div>
+          <div class="field"><label>Định mức phụ tùng (₫/1000km)</label><input class="input" value="{{ norm.part }}" onInput="{{ onNormPart }}"></div>
+        </div>
+      </div>
+      <div>
+        <h4 style="margin:0 0 4px">Ngưỡng cảnh báo</h4>
+        <div style="font-size:12px;font-style:italic;color:color-mix(in srgb,var(--color-text) 55%,transparent);margin-bottom:16px">Số ngày trước khi hết hạn để hệ thống bắt đầu nhắc</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+          <div class="field"><label>Đăng kiểm (ngày)</label><input class="input" value="30"></div>
+          <div class="field"><label>Bảo hiểm (ngày)</label><input class="input" value="30"></div>
+          <div class="field"><label>Phù hiệu (ngày)</label><input class="input" value="15"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:16px">
+          <div class="field"><label>Nhắc bảo dưỡng trước (km)</label><input class="input" value="2.000"></div>
+          <div class="field"><label>Ngưỡng tiêu hao bất thường (%)</label><input class="input" value="10"></div>
+        </div>
+      </div>
+      <div>
+        <h4 style="margin:0 0 14px">Loại giấy tờ theo dõi</h4>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <sc-for list="{{ docTogglesList }}" as="d" hint-placeholder-count="5">
+            <label class="radio" style="justify-content:flex-start"><input type="checkbox" checked="{{ d.on }}"><span class="dot" style="border-radius:3px"></span>{{ d.label }}</label>
+          </sc-for>
+        </div>
+      </div>
+      <div>
+        <h4 style="margin:0 0 14px">Kênh thông báo</h4>
+        <div class="seg">
+          <label class="seg-opt"><input type="radio" name="notif" checked><span>Trong ứng dụng</span></label>
+          <label class="seg-opt"><input type="radio" name="notif"><span>Email</span></label>
+          <label class="seg-opt"><input type="radio" name="notif"><span>Zalo / SMS</span></label>
+        </div>
+      </div>
+      <div>
+        <h4 style="margin:0 0 14px">Người dùng</h4>
+        <table class="table">
+          <thead><tr><th>Họ tên</th><th>Vai trò</th><th>Trạng thái</th></tr></thead>
+          <tbody>
+            <tr><td>Quản lý đội xe</td><td>Quản trị</td><td><span class="tag" style="background:var(--color-accent-100);color:var(--color-accent-800)">Hoạt động</span></td></tr>
+            <tr><td>Nguyễn Thị Vận Hành</td><td>Điều hành</td><td><span class="tag" style="background:var(--color-accent-100);color:var(--color-accent-800)">Hoạt động</span></td></tr>
+            <tr><td>Trần Kỹ Thuật</td><td>Kỹ thuật · xưởng</td><td><span class="tag" style="background:var(--color-accent-100);color:var(--color-accent-800)">Hoạt động</span></td></tr>
+          </tbody>
+        </table>
+        <button type="button" class="btn btn-secondary" style="margin-top:16px"><i class="ph-duotone ph-user-plus"></i>Mời người dùng</button>
+      </div>
+      <div>
+        <h4 style="margin:0 0 4px">Phân quyền</h4>
+        <div style="font-size:12px;font-style:italic;color:#7a828e;margin-bottom:14px">Ai được xem &amp; thao tác trên từng phân hệ</div>
+        <table class="table"><thead><tr><th>Vai trò</th><th>Xem</th><th>Nhập liệu</th><th>Cài đặt hệ thống</th></tr></thead><tbody>
+          <tr><td>Quản trị</td><td><i class="ph-bold ph-check" style="color:#16a34a"></i></td><td><i class="ph-bold ph-check" style="color:#16a34a"></i></td><td><i class="ph-bold ph-check" style="color:#16a34a"></i></td></tr>
+          <tr><td>Điều hành</td><td><i class="ph-bold ph-check" style="color:#16a34a"></i></td><td><i class="ph-bold ph-check" style="color:#16a34a"></i></td><td><i class="ph-bold ph-x" style="color:#cbd2dd"></i></td></tr>
+          <tr><td>Kỹ thuật · xưởng</td><td><i class="ph-bold ph-check" style="color:#16a34a"></i></td><td><i class="ph-bold ph-check" style="color:#16a34a"></i></td><td><i class="ph-bold ph-x" style="color:#cbd2dd"></i></td></tr>
+          <tr><td>Chỉ xem (BGĐ)</td><td><i class="ph-bold ph-check" style="color:#16a34a"></i></td><td><i class="ph-bold ph-x" style="color:#cbd2dd"></i></td><td><i class="ph-bold ph-x" style="color:#cbd2dd"></i></td></tr>
+        </tbody></table>
+      </div>
+      <div>
+        <h4 style="margin:0 0 14px">Nhật ký thao tác (Audit Log)</h4>
+        <table class="table"><thead><tr><th>Thời gian</th><th>Người dùng</th><th>Hành động</th></tr></thead><tbody>
+          <tr><td style="font-variant-numeric:tabular-nums;white-space:nowrap">24/07 09:41</td><td>Quản lý đội xe</td><td>Cập nhật định mức lốp → 80.000 km</td></tr>
+          <tr><td style="font-variant-numeric:tabular-nums;white-space:nowrap">24/07 08:15</td><td>Trần Kỹ Thuật</td><td>Tạo phiếu bảo dưỡng BD-2026-0142 (51C-901.33)</td></tr>
+          <tr><td style="font-variant-numeric:tabular-nums;white-space:nowrap">23/07 17:02</td><td>Nguyễn Thị Vận Hành</td><td>Ghi nhận sửa chữa 51C-845.90 · hộp số</td></tr>
+          <tr><td style="font-variant-numeric:tabular-nums;white-space:nowrap">23/07 14:30</td><td>Quản lý đội xe</td><td>Xuất báo cáo tháng 7/2026</td></tr>
+          <tr><td style="font-variant-numeric:tabular-nums;white-space:nowrap">23/07 09:00</td><td>Hệ thống</td><td>Đồng bộ dữ liệu ODO tự động (14 xe)</td></tr>
+        </tbody></table>
+      </div>
+      <div style="display:flex;gap:12px;padding-top:8px"><button type="button" class="btn btn-primary" onClick="{{ onSaveSettings }}" style="background:#3b82f6;border-color:#3b82f6">Lưu thay đổi</button><button type="button" class="btn btn-ghost">Khôi phục mặc định</button></div>
+    </div>
+    </sc-if>
+
+    </main>
+  </div>
+
+  <!-- ═══ CẬP NHẬT DỮ LIỆU ═══ -->
+  <sc-if value="{{ ui.import }}">
+  <div class="dialog-backdrop" onClick="{{ closeImport }}" style="z-index:60">
+    <div class="dialog" onClick="{{ stop }}">
+      <div class="dialog-title">Cập nhật dữ liệu thủ công</div>
+      <div class="dialog-body">Tải lên file dữ liệu vận hành (.xlsx hoặc .csv) theo mẫu chuẩn. Hệ thống đối chiếu theo biển số và cập nhật đồng thời toàn bộ KPI &amp; biểu đồ.</div>
+      <div class="field"><label>Chọn file dữ liệu</label><input type="file" class="input" accept=".xlsx,.csv" style="padding:7px 10px"></div>
+      <div style="font-size:12px;color:color-mix(in srgb,var(--color-text) 55%,transparent)">Lần cập nhật gần nhất: 16/07/2026 · 09:42 — <em>fleet_data_0716.xlsx</em></div>
+      <div class="dialog-actions"><button type="button" class="btn btn-secondary" onClick="{{ closeImport }}">Hủy</button><button type="button" class="btn btn-primary" onClick="{{ doImport }}">Tải lên &amp; cập nhật</button></div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ═══ SO SÁNH XE ═══ -->
+  <sc-if value="{{ ui.compare }}">
+  <div class="dialog-backdrop" onClick="{{ closeCompare }}" style="z-index:60">
+    <div class="dialog" onClick="{{ stop }}" style="width:min(780px,100%)">
+      <div class="dialog-title">So sánh xe</div>
+      <div class="dialog-body">Chọn 2–3 phương tiện để so sánh song song các chỉ số vận hành.</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <sc-for list="{{ compareChips }}" as="c" hint-placeholder-count="14"><label class="tag" style="{{ c.style }}"><input type="checkbox" style="display:none" onClick="{{ c.toggle }}"><span>{{ c.plate }}</span></label></sc-for>
+      </div>
+      <sc-if value="{{ hasCompare }}" hint-placeholder-val="{{ true }}">
+      <table class="table">
+        <thead><tr><th>Biển số</th><th>Hãng / Model</th><th style="text-align:right">Km/tháng</th><th style="text-align:right">L/100km</th><th style="text-align:right">Uptime</th><th style="text-align:right">Chi phí/km</th><th>Trạng thái</th></tr></thead>
+        <tbody>
+          <sc-for list="{{ compareRows }}" as="r" hint-placeholder-count="2">
+            <tr><td style="font-weight:600;font-family:var(--font-heading)">{{ r.plate }}</td><td>{{ r.bm }}</td><td style="text-align:right;font-variant-numeric:tabular-nums">{{ r.km }}</td><td style="text-align:right;font-variant-numeric:tabular-nums">{{ r.fuel }}</td><td style="text-align:right;font-variant-numeric:tabular-nums">{{ r.uptime }}%</td><td style="text-align:right;font-variant-numeric:tabular-nums">{{ r.costKm }}</td><td><span class="tag" style="{{ r.statusStyle }}">{{ r.statusLabel }}</span></td></tr>
+          </sc-for>
+        </tbody>
+      </table>
+      </sc-if>
+      <div class="dialog-actions"><button type="button" class="btn btn-primary" onClick="{{ closeCompare }}">Đóng</button></div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ═══ DRILL-DOWN ═══ -->
+  <sc-if value="{{ drillOpen }}">
+  <div class="dialog-backdrop" onClick="{{ closeDrill }}" style="z-index:60">
+    <div class="dialog" onClick="{{ stop }}" style="width:min(760px,100%)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px"><div class="dialog-title" style="margin:0">{{ drillTitle }}</div><span style="font-size:12.5px;color:#7a828e">{{ drillRows.length }} xe · bấm để mở hồ sơ</span></div>
+      <div class="flt-scroll" style="max-height:60vh;overflow-y:auto;margin-top:10px">
+        <table class="table"><thead><tr><th>Biển số</th><th>Hãng / Model</th><th>Bộ phận</th><th style="text-align:right">ODO</th><th>Trạng thái</th></tr></thead><tbody>
+          <sc-for list="{{ drillRows }}" as="v" hint-placeholder-count="6"><tr style="cursor:pointer" onClick="{{ v.open }}"><td style="font-weight:600;font-family:var(--font-heading)">{{ v.plate }}</td><td>{{ v.brandModel }}</td><td style="color:#5b636f">{{ v.dept }}</td><td style="text-align:right;font-variant-numeric:tabular-nums">{{ v.odo }}</td><td><span class="tag" style="{{ v.statusStyle }}">{{ v.statusLabel }}</span></td></tr></sc-for>
+        </tbody></table>
+      </div>
+      <div class="dialog-actions"><button type="button" class="btn btn-primary" onClick="{{ closeDrill }}">Đóng</button></div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ═══ TOAST ═══ -->
+  <sc-if value="{{ toast }}">
+  <div style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--color-text);color:var(--color-bg);padding:11px 22px;border-radius:4px;font:600 13px var(--font-heading);box-shadow:var(--shadow-lg);z-index:70;animation:flt-fade .2s ease;display:flex;align-items:center;gap:9px"><i class="ph-duotone ph-check-circle" style="font-size:17px;color:var(--color-accent-300)"></i><span>{{ toast }}</span></div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { screen: 'overview', selected: '51C-142.67', vehFilter: 'all', vehSearch: '', docType: 'all', reportType: 'fleet',
+    filters: { dept:'all', brand:'all', weight:'all', status:'all', year:'all', gara:'all', from:'', to:'' }, quick:'', ui:{ import:false, compare:false }, toast:'', compareSel:[], updated:'09:42',
+    docView:'all', expandLate:false, expandEarly:false, expandTopCost:false, expandTopFreq:false, ticketPlate:'',
+    notifOpen:false, drill:null, reportKind:'week', profileSlide:0, cmpMode:'all', lookupInput:'', lookupPlate:'51C-142.67',
+    norm:{ tire:80000, battery:60000, service:10000, part:120 } };
+
+  // ── static data ──
+  raw = [
+    ['51C-142.67','Hyundai','HD210','Tải thùng 3.5T',2022,'active',184320,'Trần Văn Hùng',28.4,94,6200,4820],
+    ['51D-088.21','Isuzu','FVR34','Tải thùng 8T',2021,'active',236540,'Lê Minh Tâm',31.2,91,6900,5230],
+    ['29H-556.10','Hino','FG8J','Tải thùng 15T',2019,'maint',412870,'Phạm Quốc Bảo',33.8,86,7400,3110],
+    ['60C-317.45','Thaco','Ollin700','Tải thùng 7T',2023,'active',96210,'Võ Thành Long',26.1,96,5600,5680],
+    ['51C-901.33','Howo','A7','Đầu kéo',2020,'repair',328940,'Đặng Văn Kiên',34.6,78,8100,0],
+    ['29C-774.02','Dongfeng','L315','Tải thùng 9T',2021,'active',201330,'Bùi Ngọc Sơn',30.5,90,6700,4990],
+    ['51D-233.19','Isuzu','QKR77','Tải nhẹ 1.9T',2022,'idle',73450,'Hoàng Văn Dũng',14.2,88,4200,0],
+    ['15C-118.76','Hino','FC9J','Tải thùng 6T',2020,'active',257600,'Ngô Đình Phúc',29.7,89,6500,4610],
+    ['51C-660.88','Hyundai','Mighty EX8','Tải thùng 8T',2023,'active',88170,'Vũ Mạnh Cường',27.3,95,5900,5340],
+    ['60C-402.55','Thaco','Auman C300','Đầu kéo',2022,'active',176420,'Đỗ Văn Lâm',33.1,92,7800,4470],
+    ['51D-509.44','Chenglong','H7','Đầu kéo',2019,'maint',389210,'Trịnh Bá Đạt',35.2,84,8300,2980],
+    ['29H-201.63','Hyundai','HD120','Tải thùng 5T',2021,'active',214560,'Lý Văn Hòa',24.8,93,5400,4880],
+    ['51C-845.90','Isuzu','NQR75','Tải thùng 5.5T',2020,'repair',276330,'Cao Xuân Trường',28.9,80,6300,0],
+    ['51D-712.08','Fuso','Canter','Tải thùng 3.5T',2022,'idle',119870,'Mai Đức Anh',22.6,87,5100,0],
+  ];
+  dkOff=[220,45,-12,310,8,180,95,-30,140,400,22,260,3,70];
+  bhOff=[120,15,200,60,-5,350,40,90,18,150,280,33,210,55];
+  phOff=[90,300,27,130,75,20,-8,160,240,50,11,190,35,310];
+  deptArr=['Đội Nội thành','Đội Liên tỉnh','Đội Miền Đông','Đội Nội thành','Đội Liên tỉnh','Đội Miền Tây','Đội Nội thành','Đội Miền Đông','Đội Nội thành','Đội Liên tỉnh','Đội Liên tỉnh','Đội Miền Tây','Đội Miền Đông','Đội Nội thành'];
+  garaArr=['Gara Trường Hải Q.12','Xưởng nội bộ','Gara Isuzu Bình Tân','Đại lý lốp Long An','Gara Trường Hải Q.12','Xưởng sơn Tân Bình','Xưởng nội bộ','Gara Hùng Phát','Xưởng nội bộ','Gara Trường Hải Q.12','Gara Chenglong','Xưởng nội bộ','Xưởng nội bộ','Gara Hùng Phát'];
+  rawRepairs = [
+    ['14/07/2026','51C-901.33','Động cơ','Thay bơm cao áp, xử lý rò rỉ dầu','Gara Trường Hải Q.12',18400000,'Đang sửa'],
+    ['12/07/2026','51C-845.90','Hộp số','Đại tu hộp số, thay bộ đồng tốc','Xưởng nội bộ',24700000,'Đang sửa'],
+    ['09/07/2026','29H-556.10','Phanh','Thay má phanh + láng đĩa 4 bánh','Gara Isuzu Bình Tân',6200000,'Hoàn thành'],
+    ['05/07/2026','60C-317.45','Lốp','Thay 2 lốp sau hiệu Casumina','Đại lý lốp Long An',9800000,'Hoàn thành'],
+    ['02/07/2026','51D-088.21','Điện','Thay ắc quy + sửa hệ thống đèn','Xưởng nội bộ',4300000,'Hoàn thành'],
+    ['28/06/2026','15C-118.76','Điều hòa','Nạp gas, thay lọc gió cabin','Gara Hùng Phát',2100000,'Hoàn thành'],
+    ['24/06/2026','51D-509.44','Động cơ','Bảo dưỡng lớn 380.000km','Gara Chenglong',31500000,'Hoàn thành'],
+    ['20/06/2026','29C-774.02','Thân vỏ','Sơn lại thùng, xử lý gỉ sét','Xưởng sơn Tân Bình',7600000,'Hoàn thành'],
+  ];
+  rawSched = [
+    ['29H-556.10','Bảo dưỡng định kỳ 15.000km','412.870','415.000',-6,'overdue'],
+    ['51D-509.44','Thay dầu máy + lọc dầu','389.210','390.000',2,'due'],
+    ['51D-088.21','Thay dầu hộp số','236.540','240.000',9,'due'],
+    ['51C-142.67','Cân chỉnh phanh + đảo lốp','184.320','186.000',15,'upcoming'],
+    ['15C-118.76','Bảo dưỡng 10.000km','257.600','260.000',21,'upcoming'],
+    ['29C-774.02','Thay lọc gió + lọc nhiên liệu','201.330','205.000',28,'upcoming'],
+    ['60C-402.55','Kiểm tra hệ thống làm mát','176.420','180.000',34,'upcoming'],
+    ['29H-201.63','Thay dầu máy','214.560','218.000',40,'upcoming'],
+  ];
+  pdbOff=[60,20,-5,180,30,90,15,120,45,200,10,150,-2,75];
+  bhvcOff=[150,40,90,25,-10,300,55,110,35,180,220,60,140,80];
+  opMonths=['8/25','9/25','10/25','11/25','12/25','1/26','2/26','3/26','4/26','5/26','6/26','7/26'];
+  opCostBase=[[42,58,15,8],[51,77,22,6],[47,93,18,11],[55,89,26,9],[49,97,20,7],[58,84,24,12],[38,46,12,5],[62,133,30,14],[54,100,22,9],[60,110,28,11],[50,85,19,8],[45,74,17,10]];
+  odoBase=[178,201,214,236,243,221,161,258,232,247,219,205];
+  roadsideRaw=[
+    ['18/07/2026','29H-556.10','Vá lốp','QL1A · Bến Lức, Long An',350000],
+    ['15/07/2026','51D-088.21','Thay ruột lốp','Cao tốc TP.HCM–Trung Lương',780000],
+    ['11/07/2026','60C-402.55','Câu bình · kích bình','QL51 · Long Thành, Đồng Nai',300000],
+    ['06/07/2026','51C-142.67','Thay dây curoa','QL51 · Bà Rịa–Vũng Tàu',1250000],
+    ['02/07/2026','29C-774.02','Thay bugi · lọc gió','QL22 · Trảng Bàng, Tây Ninh',620000],
+    ['27/06/2026','15C-118.76','Vá lốp · bơm hơi','QL13 · Thủ Dầu Một, Bình Dương',280000],
+    ['21/06/2026','51C-660.88','Thay ắc quy dọc đường','QL1A · Cai Lậy, Tiền Giang',1850000],
+  ];
+  nccRaw=[
+    ['Gara Trường Hải Q.12','Chính hãng · đa dịch vụ','028 3812 4455','4.7'],
+    ['Xưởng nội bộ FLEET OPS','Bảo dưỡng định kỳ','Nội bộ','—'],
+    ['Gara Isuzu Bình Tân','Ủy quyền Isuzu','028 3766 8899','4.5'],
+    ['Gara Hùng Phát','Điện · điện lạnh','028 3891 2200','4.2'],
+    ['Gara Chenglong Miền Đông','Đầu kéo · tải nặng','0251 384 7788','4.4'],
+  ];
+  stationRaw=[
+    ['Trạm SCDĐ Long An','QL1A · Bến Lức','24/7','0272 388 1234'],
+    ['Trạm SCDĐ Đồng Nai','QL51 · Long Thành','06:00–22:00','0251 399 5678'],
+    ['Trạm SCDĐ Tiền Giang','Cao tốc TML','24/7','0273 377 9012'],
+  ];
+
+  // ── helpers ──
+  fmtInt(n){ return n.toLocaleString('vi-VN'); }
+  fmtVnd(n){ return n.toLocaleString('vi-VN')+' ₫'; }
+  fmtM(n){ return (n/1e6).toLocaleString('vi-VN',{maximumFractionDigits:1}); }
+  go(k){ return () => this.setState({ screen:k }); }
+  setFilter(k,v){ this.setState({ filters:{ ...(this.state.filters||{}), [k]:v } }); }
+  clearFilters(){ this.setState({ filters:{ dept:'all',brand:'all',weight:'all',status:'all',year:'all',gara:'all',from:'',to:'' }, quick:'' }); }
+  flash(m){ clearTimeout(this._t); this.setState({ toast:m }); this._t=setTimeout(()=>this.setState({ toast:'' }),2600); }
+  refresh(){ const d=new Date(); const p=x=>String(x).padStart(2,'0'); this.setState({ updated:p(d.getHours())+':'+p(d.getMinutes()) }); this.flash('Đã làm mới dữ liệu vận hành'); }
+  exportExcel(){ this.flash('Đang tạo báo cáo Excel…'); }
+  openCompare(){ const sel=this.state.compareSel||[]; this.setState({ ui:{ ...(this.state.ui||{}), compare:true }, compareSel: sel.length?sel:['51C-142.67','51D-088.21'] }); }
+  toggleCompare(pl){ let sel=[...(this.state.compareSel||[])]; if(sel.includes(pl)) sel=sel.filter(x=>x!==pl); else if(sel.length<3) sel.push(pl); this.setState({ compareSel:sel }); }
+  addDays(off){ const d=new Date(2026,6,16); d.setDate(d.getDate()+off); const p=x=>String(x).padStart(2,'0'); return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()}`; }
+  daysLabel(o){ return o<0?`Quá ${-o} ngày`: o===0?'Hôm nay':`Còn ${o} ngày`; }
+  docStat(o){ return o<0?'expired': o<=30?'soon':'ok'; }
+  statusMeta(s){ return ({
+    active:{label:'Đang hoạt động',bg:'var(--color-accent-100)',c:'var(--color-accent-800)',color:'#0088b0'},
+    maint:{label:'Đang bảo dưỡng',bg:'#f9ecc4',c:'#6b5200',color:'#edbb00'},
+    repair:{label:'Đang sửa chữa',bg:'var(--color-accent-2-100)',c:'var(--color-accent-2-800)',color:'#d6006c'},
+    idle:{label:'Đang nghỉ',bg:'var(--color-neutral-200)',c:'var(--color-neutral-800)',color:'#bab6b6'},
+  })[s]; }
+  docStyleFor(st){ const m={ ok:{bg:'var(--color-accent-100)',c:'var(--color-accent-800)',lbl:'Hợp lệ'}, soon:{bg:'#f9ecc4',c:'#6b5200',lbl:'Sắp hết hạn'}, expired:{bg:'var(--color-accent-2-100)',c:'var(--color-accent-2-800)',lbl:'Đã hết hạn'} }[st]; return m; }
+  tagStyle(bg,c){ return { background:bg, color:c }; }
+
+  vehObjs(){ return this.raw.map((r,i)=>({
+    plate:r[0], brand:r[1], model:r[2], brandModel:r[1]+' '+r[2], type:r[3], year:r[4], status:r[5],
+    odo:r[6], driver:r[7], fuel:r[8], uptime:r[9], costKm:r[10], kmMonth:r[11], idx:i,
+    dept:this.deptArr[i], gara:this.garaArr[i],
+    wbucket:(()=>{const t=r[3];const tm=t.match(/([\d.]+)T/);const tons=tm?parseFloat(tm[1]):0;return t.includes('Đầu kéo')?'Đầu kéo':tons<2?'< 2 tấn':tons<5?'2 – 5 tấn':tons<10?'5 – 10 tấn':'≥ 10 tấn';})(),
+  })); }
+  docRows(){ const types=[['dk','Đăng kiểm',this.dkOff],['bh','Bảo hiểm TNDS',this.bhOff],['ph','Phù hiệu xe',this.phOff]];
+    const rows=[]; this.raw.forEach((r,i)=>{ types.forEach(([key,name,offs])=>{ const o=offs[i]; rows.push({ plate:r[0], key, typeName:name, off:o, date:this.addDays(o), stat:this.docStat(o), ref: key==='dk'?'Chu kỳ 6 tháng': key==='bh'?'PVI · TNDS bắt buộc':'Sở GTVT cấp' }); }); });
+    return rows; }
+
+  // ── charts ──
+  donut(list){ const h=React.createElement; const size=140,thick=24,r=(size-thick)/2,c=2*Math.PI*r;
+    const counts={active:0,maint:0,repair:0,idle:0}; list.forEach(v=>counts[v.status]++);
+    const order=['active','maint','repair','idle']; const total=list.length||1; let off=0;
+    const circles=order.map((k,i)=>{ const len=c*counts[k]/total; const el=h('circle',{key:i,cx:size/2,cy:size/2,r,fill:'none',stroke:this.statusMeta(k).color,strokeWidth:thick,strokeDasharray:`${len} ${c-len}`,strokeDashoffset:-off,transform:`rotate(-90 ${size/2} ${size/2})`}); off+=len; return el; });
+    return h('svg',{width:size,height:size,viewBox:`0 0 ${size} ${size}`},...circles); }
+
+  donutSeg(segs,size){ const h=React.createElement; size=size||150; const thick=26,r=(size-thick)/2,c=2*Math.PI*r;
+    const total=segs.reduce((a,s)=>a+s.value,0)||1; let off=0;
+    const arcs=segs.filter(s=>s.value>0).map((s,i)=>{ const len=c*s.value/total; const el=h('circle',{key:i,cx:size/2,cy:size/2,r,fill:'none',stroke:s.color,strokeWidth:thick,strokeDasharray:`${len} ${c-len}`,strokeDashoffset:-off,transform:`rotate(-90 ${size/2} ${size/2})`}); off+=len; return el; });
+    return h('svg',{width:size,height:size,viewBox:`0 0 ${size} ${size}`},h('circle',{cx:size/2,cy:size/2,r,fill:'none',stroke:'#edeff2',strokeWidth:thick}),...arcs); }
+
+  fmtNum(n){ return (Math.round(n*10)/10).toLocaleString('vi-VN'); }
+  niceTop(m){ m=m||1; const p=Math.pow(10,Math.floor(Math.log10(m))); const n=m/p; const q=n<=1?1:n<=2?2:n<=5?5:10; return q*p; }
+  bars(data,color,unit){ unit=unit===undefined?'tỷ':unit; const h=React.createElement; const w=580,ht=240,pl=48,pr=10,pt=12,pb=42; const iw=w-pl-pr,ih=ht-pt-pb;
+    const max=Math.max(...data.map(d=>d.v),1); const top=this.niceTop(max); const step=top/5;
+    const bw=iw/data.length; const x=i=>pl+bw*i+bw*0.16; const barW=bw*0.68; const y=v=>pt+ih-(v/top)*ih;
+    const grid=[]; for(let t=0;t<=top+1e-6;t+=step){ grid.push(h('g',{key:'g'+t},h('line',{x1:pl,x2:w-pr,y1:y(t),y2:y(t),stroke:'#e9ebef'}),h('text',{x:pl-7,y:y(t)+3,fontSize:9.5,textAnchor:'end',fill:'#9aa1ab',fontFamily:'var(--font-body)'},this.fmtNum(t)+(unit?(' '+unit):'')))); }
+    const rects=data.map((d,i)=>h('rect',{key:'b'+i,x:x(i),y:y(d.v),width:barW,height:Math.max(0,pt+ih-y(d.v)),fill:color,rx:3}));
+    const labs=data.map((d,i)=>h('text',{key:'l'+i,x:x(i)+barW/2,y:ht-9,fontSize:9,textAnchor:'middle',fill:'#9aa1ab',fontFamily:'var(--font-body)'},d.m));
+    return h('svg',{viewBox:`0 0 ${w} ${ht}`,style:{width:'100%',height:'auto'}},...grid,...rects,...labs); }
+  stackBars(data,colors,unit){ const h=React.createElement; const w=580,ht=240,pl=48,pr=10,pt=12,pb=42; const iw=w-pl-pr,ih=ht-pt-pb;
+    const totals=data.map(d=>d.parts.reduce((a,b)=>a+b,0)); const max=Math.max(...totals,1); const top=this.niceTop(max); const step=top/5;
+    const bw=iw/data.length; const barW=bw*0.62; const x=i=>pl+bw*i+(bw-barW)/2; const y=v=>pt+ih-(v/top)*ih;
+    const grid=[]; for(let t=0;t<=top+1e-6;t+=step){ grid.push(h('g',{key:'g'+t},h('line',{x1:pl,x2:w-pr,y1:y(t),y2:y(t),stroke:'#e9ebef'}),h('text',{x:pl-7,y:y(t)+3,fontSize:9.5,textAnchor:'end',fill:'#9aa1ab',fontFamily:'var(--font-body)'},this.fmtNum(t)+(unit?(' '+unit):'')))); }
+    const cols=data.map((d,i)=>{ let acc=0; const segs=d.parts.map((v,j)=>{ const yy=y(acc+v); const hh=(v/top)*ih; acc+=v; return h('rect',{key:j,x:x(i),y:yy,width:barW,height:Math.max(0,hh),fill:colors[j]}); }); return h('g',{key:'c'+i},...segs); });
+    const labs=data.map((d,i)=>h('text',{key:'l'+i,x:x(i)+barW/2,y:ht-9,fontSize:9,textAnchor:'middle',fill:'#9aa1ab',fontFamily:'var(--font-body)'},d.m));
+    return h('svg',{viewBox:`0 0 ${w} ${ht}`,style:{width:'100%',height:'auto'}},...grid,...cols,...labs); }
+
+  area(data,color,fill){ const h=React.createElement; const w=560,ht=200,pl=6,pr=6,pt=14,pb=26; const iw=w-pl-pr,ih=ht-pt-pb;
+    const max=Math.max(...data.map(d=>d.v))*1.18; const x=i=>pl+iw*i/(data.length-1); const y=v=>pt+ih-(v/max)*ih;
+    const line=data.map((d,i)=>`${x(i)},${y(d.v)}`).join(' ');
+    const areaP=`M${x(0)},${pt+ih} `+data.map((d,i)=>`L${x(i)},${y(d.v)}`).join(' ')+` L${x(data.length-1)},${pt+ih} Z`;
+    const grid=[0,.25,.5,.75,1].map((f,i)=>h('line',{key:'g'+i,x1:pl,x2:w-pr,y1:pt+ih*f,y2:pt+ih*f,stroke:'#201e1d',strokeOpacity:.08}));
+    const dots=data.map((d,i)=>h('circle',{key:'d'+i,cx:x(i),cy:y(d.v),r:3.5,fill:color}));
+    const labs=data.map((d,i)=>h('text',{key:'l'+i,x:x(i),y:ht-6,fontSize:11,textAnchor:'middle',fill:'#201e1d',fillOpacity:.55,fontFamily:'var(--font-body)'},d.m));
+    const vals=data.map((d,i)=>h('text',{key:'v'+i,x:x(i),y:y(d.v)-9,fontSize:11,textAnchor:'middle',fill:color,fontWeight:600,fontFamily:'var(--font-heading)'},d.v));
+    return h('svg',{viewBox:`0 0 ${w} ${ht}`,style:{width:'100%',height:'auto',maxWidth:'620px'}},...grid,h('path',{d:areaP,fill,stroke:'none'}),h('polyline',{points:line,fill:'none',stroke:color,strokeWidth:2}),...dots,...vals,...labs); }
+
+  spark(vals,color){ const h=React.createElement; const w=100,ht=28,p=2; const max=Math.max(...vals),min=Math.min(...vals),rng=(max-min)||1;
+    const x=i=>p+(w-2*p)*i/(vals.length-1); const y=v=>p+(ht-2*p)*(1-(v-min)/rng);
+    const pts=vals.map((v,i)=>`${x(i)},${y(v)}`).join(' ');
+    const area=`M${x(0)},${ht-p} `+vals.map((v,i)=>`L${x(i)},${y(v)}`).join(' ')+` L${x(vals.length-1)},${ht-p} Z`;
+    return h('svg',{viewBox:`0 0 ${w} ${ht}`,preserveAspectRatio:'none',style:{width:'100%',height:'28px',display:'block'}},h('path',{d:area,fill:color,fillOpacity:.13}),h('polyline',{points:pts,fill:'none',stroke:color,strokeWidth:1.6,strokeLinejoin:'round',strokeLinecap:'round'})); }
+  gauge(score){ const h=React.createElement; const size=170,cx=size/2,cy=size/2+6,r=64,thick=15;
+    const col=score>=85?'#16a34a':score>=70?'#3b82f6':score>=50?'#f59e0b':'#e5484d';
+    const a0=Math.PI, a1=0; const ang=a0+(a1-a0)*(score/100);
+    const pol=(a)=>[cx+r*Math.cos(a),cy+r*Math.sin(a)];
+    const arc=(as,ae,c,sw)=>{ const[x1,y1]=pol(as),[x2,y2]=pol(ae); const large=(ae-as)>Math.PI?1:0; return h('path',{d:`M${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`,fill:'none',stroke:c,strokeWidth:sw,strokeLinecap:'round'}); };
+    const[nx,ny]=pol(ang);
+    return h('svg',{width:size,height:cy+18,viewBox:`0 0 ${size} ${cy+18}`},
+      arc(a0,a1,'#edeff2',thick), arc(a0,ang,col,thick),
+      h('line',{x1:cx,y1:cy,x2:nx,y2:ny,stroke:'#201e1d',strokeWidth:2.5,strokeLinecap:'round'}),
+      h('circle',{cx,cy,r:5,fill:'#201e1d'}),
+      h('text',{x:cx,y:cy-14,textAnchor:'middle',fontSize:34,fontWeight:700,fill:col,fontFamily:'var(--font-heading)'},score),
+      h('text',{x:cx,y:cy+4,textAnchor:'middle',fontSize:10,fill:'#9aa1ab',fontFamily:'var(--font-body)'},'/ 100')); }
+  hscore(v){ // weighted: BD compliance 40, repair freq 20, cost/km 15, downtime gara 10, downtime bãi 5, (uptime 10 residual)
+    const comp=Math.max(0,Math.min(100, v.uptime*0.6 + (v.status==='maint'||v.status==='repair'?40:100)*0.4));
+    const freqRaw=({repair:3,maint:2,idle:1,active:0})[v.status]||0; const freq=Math.max(0,100-freqRaw*22);
+    const costKmScore=Math.max(0,Math.min(100,100-(v.costKm-4000)/60));
+    const dtGara=v.status==='repair'?40:v.status==='maint'?65:95;
+    const dtBai=v.status==='idle'?55:95;
+    const uptime=v.uptime;
+    const parts={comp,freq,costKm:costKmScore,dtGara,dtBai,uptime};
+    const score=Math.round(comp*0.40+freq*0.20+costKmScore*0.15+dtGara*0.10+dtBai*0.05+uptime*0.10);
+    return {score:Math.max(30,Math.min(99,score)),parts}; }
+  hband(s){ return s>=85?{label:'Xuất sắc',color:'#16a34a',bg:'#dcfce7'}:s>=70?{label:'Tốt',color:'#3b82f6',bg:'#dbeafe'}:s>=50?{label:'Cảnh báo',color:'#f59e0b',bg:'#fef3c7'}:{label:'Nguy cấp',color:'#e5484d',bg:'#fee2e2'}; }
+  toggleNotif(){ this.setState({notifOpen:!this.state.notifOpen}); }
+  openDrill(key){ this.setState({drill:key}); }
+  closeDrill(){ this.setState({drill:null}); }
+
+  renderVals(){
+    const S=this.state.screen;
+    const vehsAll=this.vehObjs();
+    const F=this.state.filters||{dept:'all',brand:'all',weight:'all',status:'all',year:'all',gara:'all',from:'',to:''};
+    const quick=(this.state.quick||'').trim().toLowerCase();
+    const vehs=vehsAll.filter(v=>
+      (F.dept==='all'||v.dept===F.dept) &&
+      (F.brand==='all'||v.brand===F.brand) &&
+      (F.weight==='all'||v.wbucket===F.weight) &&
+      (F.status==='all'||v.status===F.status) &&
+      (F.year==='all'||String(v.year)===F.year) &&
+      (F.gara==='all'||v.gara===F.gara) &&
+      (!quick||v.plate.toLowerCase().includes(quick)) );
+    const fleetPlates=new Set(vehs.map(v=>v.plate));
+    const ratio=vehsAll.length? vehs.length/vehsAll.length : 0;
+    const parseD=(s)=>{const p=s.split('/');return new Date(+p[2],+p[1]-1,+p[0]);};
+    const fromD=F.from?new Date(F.from):null, toD=F.to?new Date(F.to):null;
+    const inRange=(dmy)=>{const d=parseD(dmy);return (!fromD||d>=fromD)&&(!toD||d<=toD);};
+    const repFleet=this.rawRepairs.filter(r=>fleetPlates.has(r[1]));
+    const repRange=repFleet.filter(r=>inRange(r[0]));
+    const repMonth=repFleet.filter(r=>r[0].includes('/07/'));
+    const uniq=(a)=>[...new Set(a)];
+    const deptOpts=[{v:'all',l:'Tất cả bộ phận'},...uniq(vehsAll.map(v=>v.dept)).map(d=>({v:d,l:d}))];
+    const brandOpts=[{v:'all',l:'Tất cả hãng'},...uniq(vehsAll.map(v=>v.brand)).map(d=>({v:d,l:d}))];
+    const yearOpts=[{v:'all',l:'Tất cả năm'},...uniq(vehsAll.map(v=>v.year)).sort((a,b)=>b-a).map(d=>({v:String(d),l:String(d)}))];
+    const garaOpts=[{v:'all',l:'Tất cả gara'},...uniq(vehsAll.map(v=>v.gara)).map(d=>({v:d,l:d}))];
+    const hasFilters=F.dept!=='all'||F.brand!=='all'||F.weight!=='all'||F.status!=='all'||F.year!=='all'||F.gara!=='all'||!!F.from||!!F.to||!!quick;
+    const meta={
+      overview:{num:'1',title:'Tổng quan',desc:'Bức tranh toàn cảnh đội xe trong ngày'},
+      'fleet-overview':{num:'2·0',title:'Tổng quan đội xe',desc:'Cơ cấu, tuổi đời và trạng thái phương tiện'},
+      'vehicle-list':{num:'2·1',title:'Danh sách xe',desc:'Toàn bộ phương tiện đang quản lý'},
+      docs:{num:'2·2',title:'Hồ sơ giấy tờ',desc:'Đăng kiểm · bảo hiểm · phù hiệu và hạn hiệu lực'},
+      registration:{num:'2·3',title:'Kế hoạch đăng kiểm',desc:'Theo dõi hạn đăng kiểm và kế hoạch theo tháng'},
+      'maint-track':{num:'3·1',title:'Theo dõi bảo dưỡng',desc:'Tuân thủ định mức và kế hoạch bảo dưỡng đội xe'},
+      'repair-track':{num:'3·2',title:'Theo dõi sửa chữa',desc:'Chi phí, tần suất và tình trạng sửa chữa'},
+      'maint-ticket':{num:'3·3',title:'Phiếu bảo dưỡng',desc:'Lập và xuất phiếu bảo dưỡng theo mẫu'},
+      roadside:{num:'3·4',title:'Sửa chữa dọc đường',desc:'Chi phí xử lý sự cố phát sinh trên đường'},
+      'maint-overview':{num:'3·0',title:'Bảo dưỡng · Sửa chữa',desc:'Chi phí và tình hình bảo trì đội xe'},
+      'repair-log':{num:'3·1',title:'Nhật ký sửa chữa',desc:'Lịch sử can thiệp kỹ thuật của toàn đội'},
+      'maint-schedule':{num:'3·2',title:'Lịch bảo dưỡng',desc:'Các mốc bảo dưỡng định kỳ sắp tới'},
+      performance:{num:'4',title:'Hiệu suất đội xe',desc:'Quãng đường · nhiên liệu · sẵn sàng · chi phí · chấm điểm'},
+      'health-score':{num:'4·1',title:'Điểm sức khỏe xe',desc:'Vehicle Health Score — thang 100 điểm theo trọng số'},
+      'vehicle-detail':{num:'5',title:'Hồ sơ chi tiết xe',desc:'Hồ sơ CRM đầy đủ của một phương tiện'},
+      'fleet-compare':{num:'5·1',title:'So sánh đội xe',desc:'So sánh theo hãng · tải trọng · đời · bộ phận'},
+      'plate-lookup':{num:'5·2',title:'Tra cứu biển số',desc:'Nhập tay · OCR · giọng nói — timeline sự kiện'},
+      reports:{num:'6',title:'Báo cáo',desc:'Báo cáo tuần và tháng theo kỳ'},
+      ai:{num:'7',title:'AI & Analytics',desc:'Phân tích bất thường, dự báo hư hỏng và khuyến nghị'},
+      settings:{num:'8',title:'Cài đặt',desc:'Ngưỡng cảnh báo · giấy tờ · người dùng'},
+    }[S];
+
+    const open=this.state.open||{};
+    const leafStyle=(act)=>({ display:'flex',alignItems:'center',gap:'11px',width:'100%',padding:'10px 14px',border:'none',cursor:'pointer',
+      borderLeft: act?'3px solid #3b82f6':'3px solid transparent',
+      background: act?'rgba(59,130,246,.16)':'transparent',
+      color: act?'#ffffff':'#9aa3b5',
+      font:`${act?600:500} 13.5px var(--font-heading)`, borderRadius:'0 8px 8px 0', marginBottom:'3px' });
+    const childStyle=(act)=>({ display:'flex',alignItems:'center',gap:'9px',width:'100%',padding:'8px 12px 8px 42px',border:'none',cursor:'pointer',
+      borderLeft: act?'3px solid #3b82f6':'3px solid transparent',
+      background: act?'rgba(59,130,246,.14)':'transparent',
+      color: act?'#ffffff':'#828b9f',
+      font:`${act?600:500} 13px var(--font-heading)`, borderRadius:'0 8px 8px 0', marginBottom:'2px' });
+    const navDef=[
+      {kind:'leaf',key:'overview',label:'Tổng quan',icon:'gauge'},
+      {kind:'parent',key:'tt',label:'Thông tin xe',icon:'truck',children:[['fleet-overview','Tổng quan đội xe'],['vehicle-list','Danh sách xe'],['docs','Hồ sơ giấy tờ'],['registration','Kế hoạch đăng kiểm']]},
+      {kind:'parent',key:'bd',label:'Bảo dưỡng · Sửa chữa',icon:'wrench',children:[['maint-overview','Tổng quan'],['maint-track','Theo dõi bảo dưỡng'],['repair-track','Theo dõi sửa chữa'],['maint-ticket','Phiếu bảo dưỡng'],['roadside','Sửa chữa dọc đường']]},
+      {kind:'leaf',key:'performance',label:'Hiệu suất đội xe',icon:'chart-line-up'},
+      {kind:'leaf',key:'health-score',label:'Điểm sức khỏe xe',icon:'heartbeat'},
+      {kind:'leaf',key:'vehicle-detail',label:'Hồ sơ chi tiết xe',icon:'identification-card'},
+      {kind:'leaf',key:'fleet-compare',label:'So sánh đội xe',icon:'scales'},
+      {kind:'leaf',key:'plate-lookup',label:'Tra cứu biển số',icon:'magnifying-glass'},
+      {kind:'leaf',key:'reports',label:'Báo cáo',icon:'file-text'},
+      {kind:'leaf',key:'ai',label:'AI & Analytics',icon:'sparkle'},
+      {kind:'leaf',key:'settings',label:'Cài đặt',icon:'gear'},
+    ];
+    const nav=navDef.map(n=>{
+      if(n.kind==='leaf'){ const act=S===n.key; return { isLeaf:true,isParent:false,key:n.key,label:n.label,icon:n.icon,onClick:this.go(n.key),style:leafStyle(act) }; }
+      const childKeys=n.children.map(c=>c[0]); const hasActive=childKeys.includes(S);
+      const expanded= open[n.key]!==undefined ? open[n.key] : hasActive;
+      return { isLeaf:false,isParent:true,key:n.key,label:n.label,icon:n.icon,expanded,
+        onToggle:()=>this.setState({open:{...open,[n.key]: !expanded}}),
+        style:{ ...leafStyle(false), color: hasActive?'#ffffff':'#c3c9d6', fontWeight: 500, background:'transparent', borderLeftColor:'transparent' },
+        caretStyle:{ fontSize:'11px', transition:'transform .2s ease', transform: expanded?'rotate(0deg)':'rotate(-90deg)', color:'#6b7385', flex:'none' },
+        children: n.children.map(c=>{ const act=S===c[0]; return { key:c[0],label:c[1],onClick:this.go(c[0]),style:childStyle(act), dot: act?'#3b82f6':'#5c6478' }; }) };
+    });
+
+    // counts
+    const cnt={active:0,maint:0,repair:0,idle:0}; vehs.forEach(v=>cnt[v.status]++);
+    const statusLegend=['active','maint','repair','idle'].map(k=>({label:this.statusMeta(k).label,color:this.statusMeta(k).color,count:cnt[k]}));
+    const kmMonthTotal=vehs.reduce((a,v)=>a+v.kmMonth,0);
+    const avgFuel=(vehs.reduce((a,v)=>a+v.fuel,0)/vehs.length);
+    const avgUptime=Math.round(vehs.reduce((a,v)=>a+v.uptime,0)/vehs.length);
+    const avgCostKm=Math.round(vehs.reduce((a,v)=>a+v.costKm,0)/vehs.length);
+    const allDocs=this.docRows();
+    const docs=allDocs.filter(d=>fleetPlates.has(d.plate));
+    const dSoon=docs.filter(d=>d.stat==='soon').length, dExp=docs.filter(d=>d.stat==='expired').length, dOk=docs.filter(d=>d.stat==='ok').length;
+    const repairMonth=repMonth.reduce((a,r)=>a+r[5],0);
+    const inShop=cnt.maint+cnt.repair;
+
+    // overview
+    const ovKpis=[
+      {label:'Đang hoạt động',value:cnt.active,unit:'xe',sub:`${Math.round(cnt.active/vehs.length*100)}% đội xe`,subColor:'var(--color-accent-700)'},
+      {label:'Cần chú ý',value:dExp+dSoon+1,unit:'',sub:'giấy tờ & bảo dưỡng',subColor:'var(--color-accent-2-700)'},
+      {label:'Chi phí BD tháng',value:this.fmtM(repairMonth),unit:'tr₫',sub:'tháng 7/2026',subColor:'color-mix(in srgb,var(--color-text) 55%,transparent)'},
+      {label:'Tỷ lệ sẵn sàng',value:avgUptime,unit:'%',sub:'trung bình đội',subColor:'var(--color-accent-700)'},
+    ];
+    const ovAlerts=[
+      {title:'Đăng kiểm hết hạn',body:'29H-556.10 · quá hạn 12 ngày',dot:'#d6006c',tag:'Khẩn cấp',tagStyle:this.tagStyle('var(--color-accent-2-100)','var(--color-accent-2-800)')},
+      {title:'Bảo dưỡng quá hạn',body:'29H-556.10 · vượt mốc 15.000km',dot:'#d6006c',tag:'Khẩn cấp',tagStyle:this.tagStyle('var(--color-accent-2-100)','var(--color-accent-2-800)')},
+      {title:'Bảo hiểm sắp hết hạn',body:'51D-088.21 · còn 15 ngày',dot:'#edbb00',tag:'Cảnh báo',tagStyle:this.tagStyle('#f9ecc4','#6b5200')},
+      {title:'Tiêu hao nhiên liệu bất thường',body:'51D-509.44 · +12% so với TB đội',dot:'#edbb00',tag:'Cảnh báo',tagStyle:this.tagStyle('#f9ecc4','#6b5200')},
+      {title:'2 xe đang trong xưởng',body:'51C-901.33, 51C-845.90 · đang sửa chữa',dot:'#0088b0',tag:'Thông tin',tagStyle:this.tagStyle('var(--color-accent-100)','var(--color-accent-800)')},
+    ];
+    const mLabels=['Th2','Th3','Th4','Th5','Th6','Th7'], kmBase=[198,221,214,243,236,161], costBase=[52,61,47,73,58,68];
+    const kmData=mLabels.map((m,i)=>({m,v:Math.round(kmBase[i]*ratio)}));
+    const costData=mLabels.map((m,i)=>({m,v:Math.round(costBase[i]*ratio)}));
+
+    // fleet overview
+    const avgAge=(2026 - vehs.reduce((a,v)=>a+v.year,0)/vehs.length).toFixed(1);
+    const fleetKpis=[
+      {label:'Tổng phương tiện',value:vehs.length,unit:'xe',sub:'chi nhánh HCM'},
+      {label:'Tuổi TB đội xe',value:avgAge,unit:'năm',sub:'2019 – 2023'},
+      {label:'Odo TB',value:this.fmtInt(Math.round(vehs.reduce((a,v)=>a+v.odo,0)/vehs.length/1000)),unit:'k km',sub:'toàn đội'},
+      {label:'Km tháng này',value:this.fmtInt(kmMonthTotal),unit:'km',sub:'cộng dồn'},
+    ];
+    const groupCount=(fn)=>{ const m={}; vehs.forEach(v=>{const k=fn(v);m[k]=(m[k]||0)+1;}); return Object.entries(m).sort((a,b)=>b[1]-a[1]); };
+    const typeGroups=groupCount(v=> v.type.includes('Đầu kéo')?'Đầu kéo': v.type.includes('nhẹ')?'Tải nhẹ (<2T)': parseFloat(v.type.match(/[\d.]+/))>=10?'Tải nặng (≥10T)':'Tải trung (2–10T)');
+    const maxT=Math.max(...typeGroups.map(g=>g[1]));
+    const byType=typeGroups.map(g=>({label:g[0],count:g[1],pct:Math.round(g[1]/maxT*100)+'%'}));
+    const brandGroups=groupCount(v=>v.brand); const maxB=Math.max(...brandGroups.map(g=>g[1]));
+    const byBrand=brandGroups.map(g=>({label:g[0],count:g[1],pct:Math.round(g[1]/maxB*100)+'%'}));
+    const ageGroups=[['≤2 năm',v=>2026-v.year<=2],['3 năm',v=>2026-v.year===3],['4 năm',v=>2026-v.year===4],['5 năm',v=>2026-v.year===5],['≥6 năm',v=>2026-v.year>=6]];
+    const ageCounts=ageGroups.map(([l,f])=>({l,c:vehs.filter(f).length})); const maxA=Math.max(...ageCounts.map(a=>a.c))||1;
+    const ageDist=ageCounts.map(a=>({label:a.l,count:a.c,h:Math.max(6,Math.round(a.c/maxA*115))+'px'}));
+
+    // vehicle list
+    const vf=this.state.vehFilter, q=this.state.vehSearch.trim().toLowerCase();
+    const vehFilterDefs=[['all','Tất cả'],['active','Hoạt động'],['maint','Bảo dưỡng'],['repair','Sửa chữa'],['idle','Nghỉ']];
+    const vehFilters=vehFilterDefs.map(([k,l])=>({label:l,onClick:()=>this.setState({vehFilter:k}),style:{ background: vf===k?'var(--color-accent)':'transparent', color: vf===k?'var(--color-bg)':'inherit' }}));
+    let filteredVehicles=vehs.filter(v=> (vf==='all'||v.status===vf) && (!q || v.plate.toLowerCase().includes(q) || v.driver.toLowerCase().includes(q)));
+    filteredVehicles=filteredVehicles.map(v=>{ const m=this.statusMeta(v.status); return {...v,odoFmt:this.fmtInt(v.odo),statusLabel:m.label,statusStyle:this.tagStyle(m.bg,m.c),open:()=>this.setState({screen:'vehicle-detail',selected:v.plate})}; });
+
+    // docs
+    const dt=this.state.docType;
+    const docKpis=[
+      {label:'Đã hết hạn',value:dExp,sub:'cần xử lý ngay',bar:'var(--color-accent-2-500)'},
+      {label:'Sắp hết hạn (≤30 ngày)',value:dSoon,sub:'cần lên lịch gia hạn',bar:'#edbb00'},
+      {label:'Còn hiệu lực',value:dOk,sub:'không cần xử lý',bar:'var(--color-accent)'},
+    ];
+    const docTypeFilters=[['all','Tất cả'],['dk','Đăng kiểm'],['bh','Bảo hiểm'],['ph','Phù hiệu']].map(([k,l])=>({label:l,onClick:()=>this.setState({docType:k}),style:{ background: dt===k?'var(--color-accent)':'transparent', color: dt===k?'var(--color-bg)':'inherit' }}));
+    const filteredDocs=docs.filter(d=> dt==='all'||d.key===dt).sort((a,b)=>a.off-b.off).map(d=>{ const s=this.docStyleFor(d.stat); return {...d,statusLabel:s.lbl,statusStyle:this.tagStyle(s.bg,s.c),daysLabel:this.daysLabel(d.off),daysStyle: d.off<0?'color:var(--color-accent-2-700);font-weight:600': d.off<=30?'color:#6b5200;font-weight:600':'' }; });
+
+    // maintenance overview
+    const maintKpis=[
+      {label:'Chi phí tháng',value:this.fmtM(repairMonth),unit:'tr₫',sub:'▲ 17% so tháng trước',subColor:'var(--color-accent-2-700)'},
+      {label:'Lượt sửa tháng',value:repMonth.length,unit:'lượt',sub:'tháng 7/2026',subColor:'color-mix(in srgb,var(--color-text) 55%,transparent)'},
+      {label:'Xe trong xưởng',value:inShop,unit:'xe',sub:'đang bảo trì/sửa',subColor:'var(--color-accent-2-700)'},
+      {label:'Bảo dưỡng quá hạn',value:1,unit:'xe',sub:'29H-556.10',subColor:'var(--color-accent-2-700)'},
+    ];
+    const catMap={}; repRange.forEach(r=>catMap[r[2]]=(catMap[r[2]]||0)+r[5]);
+    const catArr=Object.entries(catMap).sort((a,b)=>b[1]-a[1]); const maxC=Math.max(...catArr.map(c=>c[1]));
+    const costByCat=catArr.map(c=>({label:c[0],value:this.fmtM(c[1])+' tr',pct:Math.round(c[1]/maxC*100)+'%'}));
+
+    // repairs
+    const repairs=repRange.map(r=>({date:r[0],plate:r[1],cat:r[2],desc:r[3],garage:r[4],costFmt:this.fmtVnd(r[5]),status:r[6],statusStyle: r[6]==='Đang sửa'?this.tagStyle('var(--color-accent-2-100)','var(--color-accent-2-800)'):this.tagStyle('var(--color-accent-100)','var(--color-accent-800)')}));
+    const repairTotal=this.fmtVnd(repRange.reduce((a,r)=>a+r[5],0));
+
+    // schedule
+    const schStyle={overdue:{bg:'var(--color-accent-2-100)',c:'var(--color-accent-2-800)',lbl:'Quá hạn',dot:'#d6006c'},due:{bg:'#f9ecc4',c:'#6b5200',lbl:'Đến hạn',dot:'#edbb00'},upcoming:{bg:'var(--color-accent-100)',c:'var(--color-accent-800)',lbl:'Sắp tới',dot:'#0088b0'}};
+    const schedule=this.rawSched.filter(s=>fleetPlates.has(s[0])).map(s=>{ const m=schStyle[s[5]]; return {plate:s[0],item:s[1],odoNow:s[2],odoNext:s[3],dueDate:this.addDays(s[4]),statusLabel:m.lbl,statusStyle:this.tagStyle(m.bg,m.c),dot:m.dot}; });
+
+    // performance
+    const perfKpis=[
+      {label:'Km toàn đội / tháng',value:this.fmtInt(kmMonthTotal),unit:'km',sub:'tháng 7 (đang chạy)'},
+      {label:'Tiêu hao TB',value:avgFuel.toLocaleString('vi-VN',{maximumFractionDigits:1}),unit:'L/100km',sub:'toàn đội'},
+      {label:'Uptime TB',value:avgUptime,unit:'%',sub:'tỷ lệ sẵn sàng'},
+      {label:'Chi phí / km TB',value:this.fmtInt(avgCostKm),unit:'₫',sub:'gồm nhiên liệu & BD'},
+    ];
+    const fuelSorted=[...vehs].sort((a,b)=>b.fuel-a.fuel); const maxFuel=Math.max(...vehs.map(v=>v.fuel));
+    const fuelBars=fuelSorted.map(v=>({plate:v.plate,value:v.fuel.toLocaleString('vi-VN',{minimumFractionDigits:1}),pct:Math.round(v.fuel/maxFuel*100)+'%',color: v.fuel>avgFuel+3?'#d6006c': v.fuel>avgFuel?'#edbb00':'#0088b0'}));
+    const upSorted=[...vehs].sort((a,b)=>b.uptime-a.uptime);
+    const uptimeBars=upSorted.map(v=>({plate:v.plate,value:v.uptime,pct:v.uptime+'%',color: v.uptime>=92?'#0088b0': v.uptime>=85?'#edbb00':'#d6006c'}));
+    const rankSorted=[...vehs].sort((a,b)=> (b.uptime-b.fuel*0.5) - (a.uptime-a.fuel*0.5));
+    const perfRank=rankSorted.map((v,i)=>{ const good=i<Math.ceil(vehs.length/2); return {rank:i+1,plate:v.plate,km:this.fmtInt(v.kmMonth),fuel:v.fuel.toLocaleString('vi-VN',{minimumFractionDigits:1}),uptime:v.uptime,costKm:this.fmtInt(v.costKm),grade: good?'Tốt':'Cần cải thiện',gradeStyle: good?this.tagStyle('var(--color-accent-100)','var(--color-accent-800)'):this.tagStyle('#f9ecc4','#6b5200')}; });
+
+    // vehicle detail
+    const selV=vehsAll.find(v=>v.plate===this.state.selected)||vehsAll[0];
+    const sm=this.statusMeta(selV.status);
+    const selDocs=allDocs.filter(d=>d.plate===selV.plate).map(d=>{ const s=this.docStyleFor(d.stat); return {typeName:d.typeName,date:d.date,statusLabel:s.lbl,statusStyle:this.tagStyle(s.bg,s.c),daysLabel:this.daysLabel(d.off),daysStyle: d.off<0?'color:var(--color-accent-2-700);font-weight:600': d.off<=30?'color:#6b5200;font-weight:600':''}; });
+    const selHist=this.rawRepairs.filter(r=>r[1]===selV.plate).map(r=>({date:r[0],cat:r[2],desc:r[3],costFmt:this.fmtVnd(r[5])}));
+    const sel={ plate:selV.plate,brandModel:selV.brandModel,type:selV.type,year:selV.year,statusLabel:sm.label,statusStyle:this.tagStyle(sm.bg,sm.c),
+      specs:[{k:'Hãng',v:selV.brand},{k:'Model',v:selV.model},{k:'Loại xe',v:selV.type},{k:'Năm sản xuất',v:selV.year},{k:'Odo hiện tại',v:this.fmtInt(selV.odo)+' km'},{k:'Tài xế',v:selV.driver}],
+      metrics:[{label:'Km / tháng',value:this.fmtInt(selV.kmMonth),unit:'km'},{label:'Tiêu hao',value:selV.fuel.toLocaleString('vi-VN',{minimumFractionDigits:1}),unit:'L'},{label:'Uptime',value:selV.uptime,unit:'%'},{label:'Chi phí/km',value:this.fmtInt(selV.costKm),unit:'₫'}],
+      docs:selDocs, history:selHist, hasHistory:selHist.length>0, noHistory:selHist.length===0 };
+
+    // reports
+    const rtDef=[['fleet','Tổng hợp đội xe'],['cost','Chi phí bảo dưỡng · sửa chữa'],['perf','Hiệu suất vận hành'],['docs','Tình trạng giấy tờ']];
+    const rt=this.state.reportType;
+    const reportTypes=rtDef.map(([k,l])=>({label:l,onClick:()=>this.setState({reportType:k}),checked:rt===k}));
+    const reportTitle=(rtDef.find(r=>r[0]===rt)||rtDef[0])[1];
+    const reportKpis=[
+      {label:'Tổng km',value:this.fmtInt(kmMonthTotal)},
+      {label:'Chi phí BD-SC',value:this.fmtM(repairMonth)+' tr₫'},
+      {label:'Tiêu hao TB',value:avgFuel.toFixed(1).replace('.',',')+' L'},
+      {label:'Uptime TB',value:avgUptime+'%'},
+      {label:'Giấy tờ hết hạn',value:dExp+' hồ sơ'},
+      {label:'Lượt sửa chữa',value:repMonth.length},
+    ];
+    const costByVeh={}; repRange.forEach(r=>costByVeh[r[1]]=(costByVeh[r[1]]||0)+r[5]);
+    const reportRows=vehs.map(v=>{ const m=this.statusMeta(v.status); return {plate:v.plate,km:this.fmtInt(v.kmMonth),cost:this.fmtM(costByVeh[v.plate]||0)+' tr',costKm:this.fmtInt(v.costKm),statusLabel:m.label,statusStyle:this.tagStyle(m.bg,m.c)}; });
+
+    // AI
+    const aiAlerts=[
+      {sev:'critical',icon:'seal-warning',bar:'#d6006c',sevLabel:'Khẩn cấp',tagStyle:this.tagStyle('var(--color-accent-2-100)','var(--color-accent-2-800)'),title:'Đăng kiểm hết hạn',body:'29H-556.10 đã hết hạn đăng kiểm 12 ngày. Phương tiện không được phép lưu thông — dừng khai thác ngay.',action:'Đặt lịch đăng kiểm',hasAction:true},
+      {sev:'critical',icon:'wrench',bar:'#d6006c',sevLabel:'Khẩn cấp',tagStyle:this.tagStyle('var(--color-accent-2-100)','var(--color-accent-2-800)'),title:'Bảo dưỡng quá hạn',body:'29H-556.10 đã vượt mốc bảo dưỡng 15.000km (quá 6 ngày). Nguy cơ hư hại động cơ nếu tiếp tục vận hành.',action:'Lên lịch bảo dưỡng',hasAction:true},
+      {sev:'warning',icon:'shield-warning',bar:'#edbb00',sevLabel:'Cảnh báo',tagStyle:this.tagStyle('#f9ecc4','#6b5200'),title:'Bảo hiểm sắp / đã hết hạn',body:'51C-901.33 đã hết hạn bảo hiểm 5 ngày; 51D-088.21 còn 15 ngày. Cần gia hạn để đảm bảo trách nhiệm.',action:'Gia hạn bảo hiểm',hasAction:true},
+      {sev:'warning',icon:'gas-pump',bar:'#edbb00',sevLabel:'Cảnh báo',tagStyle:this.tagStyle('#f9ecc4','#6b5200'),title:'Tiêu hao nhiên liệu bất thường',body:'51D-509.44 tiêu hao 35,2 L/100km, cao hơn 12% mức trung bình đội. Đề xuất kiểm tra kim phun & lọc gió.',hasAction:false},
+      {sev:'info',icon:'info',bar:'#0088b0',sevLabel:'Thông tin',tagStyle:this.tagStyle('var(--color-accent-100)','var(--color-accent-800)'),title:'4 xe sắp đến mốc bảo dưỡng',body:'Trong 30 ngày tới có 4 phương tiện đến mốc bảo dưỡng định kỳ. Nên gom lịch để tối ưu thời gian xưởng.',hasAction:false},
+    ];
+    const aiPred=[
+      {veh:'51C-845.90',pred:'Hư hỏng hộp số',note:'Rung & kêu khi sang số, đang can thiệp',prob:'Cao',probStyle:this.tagStyle('var(--color-accent-2-100)','var(--color-accent-2-800)'),when:'Đã xảy ra'},
+      {veh:'51C-901.33',pred:'Hao dầu động cơ',note:'Áp suất dầu giảm dần theo tuần',prob:'Trung bình',probStyle:this.tagStyle('#f9ecc4','#6b5200'),when:'~30 ngày'},
+      {veh:'29H-556.10',pred:'Mòn má phanh sớm',note:'Tải nặng, tần suất phanh cao',prob:'Cao',probStyle:this.tagStyle('var(--color-accent-2-100)','var(--color-accent-2-800)'),when:'~2.000 km'},
+    ];
+
+    const docTogglesList=[{label:'Đăng kiểm',on:true},{label:'Bảo hiểm TNDS & vật chất',on:true},{label:'Phù hiệu xe',on:true},{label:'Đăng ký xe',on:false},{label:'Giấy phép lái xe của tài xế',on:false}];
+
+    const cmpSel=this.state.compareSel||[];
+    const compareChips=vehsAll.map(v=>({plate:v.plate,toggle:()=>this.toggleCompare(v.plate),style: cmpSel.includes(v.plate)?{background:'var(--color-accent)',color:'var(--color-bg)',cursor:'pointer'}:{background:'var(--color-neutral-200)',color:'var(--color-neutral-800)',cursor:'pointer'}}));
+    const compareRows=cmpSel.map(p=>{const v=vehsAll.find(x=>x.plate===p);const m=this.statusMeta(v.status);return{plate:v.plate,bm:v.brandModel,km:this.fmtInt(v.kmMonth),fuel:v.fuel.toLocaleString('vi-VN',{minimumFractionDigits:1}),uptime:v.uptime,costKm:this.fmtInt(v.costKm),statusLabel:m.label,statusStyle:this.tagStyle(m.bg,m.c)};});
+    const hasCompare=cmpSel.length>0;
+
+    // ── KPI board + panels (overview) ──
+    const fleetCount=vehs.length;
+    const PC={ blue:['#3b82f6','rgba(59,130,246,.12)'], green:['#16a34a','rgba(22,163,74,.12)'], red:['#e5484d','rgba(229,72,77,.12)'], orange:['#f59e0b','rgba(245,158,11,.14)'], purple:['#7c5cfc','rgba(124,92,252,.13)'] };
+    const healthOf=(v)=>Math.max(30,Math.min(99,Math.round(v.uptime*0.6 + Math.max(0,100-Math.max(0,v.fuel-24)*5)*0.25 + Math.max(0,100-(2026-v.year)*11)*0.15)));
+    const hc={good:0,watch:0,risk:0}; vehs.forEach(v=>{const s=healthOf(v); if(s>=80)hc.good++; else if(s>=50)hc.watch++; else hc.risk++;});
+    const avgHealth=vehs.length?Math.round(vehs.reduce((a,v)=>a+healthOf(v),0)/vehs.length):0;
+    const healthDonut=this.donutSeg([{value:hc.good,color:PC.blue[0]},{value:hc.watch,color:PC.green[0]},{value:hc.risk,color:PC.orange[0]}]);
+    const healthLegend=[{label:'Khỏe mạnh (≥80)',color:PC.blue[0]},{label:'Cần theo dõi (50–79)',color:PC.green[0]},{label:'Nguy cơ hỏng hóc (<50)',color:PC.orange[0]}];
+    const db={over:0,d30:0,d90:0,ok:0}; docs.forEach(d=>{ if(d.off<0)db.over++; else if(d.off<=30)db.d30++; else if(d.off<=90)db.d90++; else db.ok++; });
+    const docDonut=this.donutSeg([{value:db.over,color:PC.blue[0]},{value:db.d30,color:PC.green[0]},{value:db.d90,color:PC.orange[0]},{value:db.ok,color:PC.purple[0]}]);
+    const docLegend=[{label:'Quá hạn',color:PC.blue[0]},{label:'Hết hạn < 30 ngày',color:PC.green[0]},{label:'Hết hạn 30–90 ngày',color:PC.orange[0]},{label:'Còn hạn > 90 ngày',color:PC.purple[0]}];
+    const costBaseB=[0.2,5.1,7.7,9.3,9.7,9.3,4.6,13.3,10.0,11.0,8.5,7.4];
+    const monthsY=['8/25','9/25','10/25','11/25','12/25','1/26','2/26','3/26','4/26','5/26','6/26','7/26'];
+    const costBars=this.bars(monthsY.map((m,i)=>({m,v:+(costBaseB[i]*ratio).toFixed(1)})),PC.blue[0]);
+    const yearCostVnd=Math.round(costBaseB.reduce((a,b)=>a+b,0)*ratio*1e9);
+    const monthCostVnd=Math.round(costBaseB[11]*ratio*1e9);
+    const schFleet=this.rawSched.filter(s=>fleetPlates.has(s[0]));
+    const overdueCnt=schFleet.filter(s=>s[5]==='overdue').length;
+    const onTimePct=schFleet.length?Math.round((schFleet.length-overdueCnt)/schFleet.length*100):100;
+    const dkExp=docs.filter(d=>d.key==='dk'&&d.off<0).length;
+    const bhSoon=docs.filter(d=>d.key==='bh'&&d.off<=30).length;
+    const avgAgeN=(2026 - vehs.reduce((a,v)=>a+v.year,0)/(vehs.length||1)).toFixed(1);
+    const avgOdoK=this.fmtInt(Math.round(vehs.reduce((a,v)=>a+v.odo,0)/(vehs.length||1)));
+    const mk=(label,value,unit,sub,icon,col,numSize)=>({label,value,unit:unit||'',sub,icon,numColor:PC[col][0],iconColor:PC[col][0],iconBg:PC[col][1],numSize:numSize||'29px',numBreak:numSize&&parseInt(numSize)<=20?'anywhere':'normal'});
+    const dueCnt=schFleet.filter(s=>s[5]==='due').length;
+    const upcomingCnt=schFleet.filter(s=>s[5]==='upcoming').length;
+    const weekCostVnd=Math.round(monthCostVnd/4.3);
+    const kpiBoard=[
+      mk('Tổng số xe',fleetCount,'','Tổng quy mô đội xe','truck','blue'),
+      mk('Xe hoạt động',cnt.active,'',Math.round(cnt.active/(vehs.length||1)*100)+'% đội xe','check-circle','green'),
+      mk('Xe ngừng hoạt động',vehs.length-cnt.active,'',Math.round((vehs.length-cnt.active)/(vehs.length||1)*100)+'% đội xe','prohibit-inset','red'),
+      mk('Xe đến kỳ bảo dưỡng',dueCnt,'','Cần lên lịch','hourglass-medium','orange'),
+      mk('Xe trễ bảo dưỡng',overdueCnt,'','Quá định mức','warning-octagon','red'),
+      mk('Đăng kiểm hết hạn',dkExp,'',dkExp+' xe quá hạn','identification-card','red'),
+      mk('Bảo hiểm hết hạn',bhSoon,'',bhSoon+' xe ≤ 30 ngày','shield-warning','orange'),
+      mk('Tổng chi phí tuần',this.fmtVnd(weekCostVnd),'','7 ngày gần nhất','currency-circle-dollar','blue','16px'),
+      mk('Tổng chi phí tháng',this.fmtVnd(monthCostVnd),'','Tháng này','coins','purple','16px'),
+      mk('Tổng chi phí năm',this.fmtVnd(yearCostVnd),'','Năm nay','chart-line-up','green','16px'),
+    ];
+    const weightOpts=[{v:'all',l:'-- Tất cả --'},{v:'< 2 tấn',l:'< 2 tấn'},{v:'2 – 5 tấn',l:'2 – 5 tấn'},{v:'5 – 10 tấn',l:'5 – 10 tấn'},{v:'≥ 10 tấn',l:'≥ 10 tấn'},{v:'Đầu kéo',l:'Đầu kéo'}];
+    const statusOpts=[{v:'all',l:'-- Tất cả --'},{v:'active',l:'Đang hoạt động'},{v:'maint',l:'Đang bảo dưỡng'},{v:'repair',l:'Đang sửa chữa'},{v:'idle',l:'Đang nghỉ'}];
+
+    // ═══ EXTENDED SCREENS ═══
+    const vByPlate={}; vehsAll.forEach(v=>vByPlate[v.plate]=v);
+    const barsHtml=(arr,color)=>{ const mx=Math.max(...arr.map(a=>a.raw),1); return arr.map(a=>({label:a.label,value:a.disp,pct:Math.round(a.raw/mx*100)+'%',color})); };
+    const groupSum=(list,fn,val)=>{ const m={}; list.forEach(x=>{const k=fn(x); m[k]=(m[k]||0)+(val?val(x):1);}); return Object.entries(m).sort((a,b)=>b[1]-a[1]); };
+
+    // Overview extra charts
+    const opColors=['#3b82f6','#e5484d','#f59e0b','#7c5cfc'];
+    const opLegend=[{label:'Bảo dưỡng',color:opColors[0]},{label:'Sửa chữa',color:opColors[1]},{label:'Thay lốp',color:opColors[2]},{label:'Thay ắc quy',color:opColors[3]}];
+    const opBars=this.stackBars(this.opMonths.map((m,i)=>({m,parts:this.opCostBase[i].map(x=>Math.round(x*ratio))})),opColors,'tr');
+    const odoBars=this.bars(this.opMonths.map((m,i)=>({m,v:Math.round(this.odoBase[i]*ratio)})),'#16a34a','k');
+
+    // 2.0 fleet extras
+    const byDept=barsHtml(groupSum(vehs,v=>v.dept).map(g=>({label:g[0],disp:g[1]+' xe',raw:g[1]})),'#3b82f6');
+    const byWeight=barsHtml(groupSum(vehs,v=>v.wbucket).map(g=>({label:g[0],disp:g[1]+' xe',raw:g[1]})),'#7c5cfc');
+    const odoRank=barsHtml([...vehs].sort((a,b)=>b.odo-a.odo).slice(0,8).map(v=>({label:v.plate,disp:this.fmtInt(v.odo)+' km',raw:v.odo})),'#0088b0');
+    const kmTopList=[...vehs].sort((a,b)=>b.kmMonth-a.kmMonth).slice(0,5).map((v,i)=>({rank:i+1,plate:v.plate,dept:v.dept,value:this.fmtInt(v.kmMonth)+' km'}));
+    const odoTopList=[...vehs].sort((a,b)=>b.odo-a.odo).slice(0,5).map((v,i)=>({rank:i+1,plate:v.plate,dept:v.dept,value:this.fmtInt(v.odo)+' km'}));
+    const ageTopList=[...vehs].sort((a,b)=>a.year-b.year).slice(0,5).map((v,i)=>({rank:i+1,plate:v.plate,dept:v.dept,value:(2026-v.year)+' năm · '+v.year}));
+
+    // 2.2 docs table
+    const docCell=(off)=>({ daysLabel:this.daysLabel(off), date:this.addDays(off), style:'font-size:11px;'+(off<0?'color:#e5484d;font-weight:600':off<=30?'color:#b45309;font-weight:600':'color:#5b636f'), off });
+    const docViewS=this.state.docView||'all';
+    const docTableAll=vehs.map(v=>{ const offs=[this.dkOff[v.idx],this.pdbOff[v.idx],this.bhOff[v.idx],this.bhvcOff[v.idx],this.phOff[v.idx]]; const worst=Math.min.apply(null,offs); const s=this.docStyleFor(this.docStat(worst)); return {plate:v.plate,dept:v.dept,dk:docCell(offs[0]),pdb:docCell(offs[1]),bhds:docCell(offs[2]),bhvc:docCell(offs[3]),ph:docCell(offs[4]),worst,statusLabel:s.lbl,statusStyle:this.tagStyle(s.bg,s.c)}; });
+    const docTable=docTableAll.filter(r=> docViewS==='all'?true: docViewS==='expired'?r.worst<0: r.worst>=0&&r.worst<=30).sort((a,b)=>a.worst-b.worst);
+    const docKpisClick=[
+      {label:'Đã hết hạn',value:docTableAll.filter(r=>r.worst<0).length,sub:'Xe có ≥1 giấy tờ quá hạn',bar:'#e5484d',view:'expired'},
+      {label:'Hết hạn trong 30 ngày',value:docTableAll.filter(r=>r.worst>=0&&r.worst<=30).length,sub:'Cần gia hạn sớm',bar:'#f59e0b',view:'soon'},
+      {label:'Toàn bộ đội xe',value:docTableAll.length,sub:'Xem tất cả giấy tờ',bar:'#3b82f6',view:'all'},
+    ].map(k=>({...k,active:docViewS===k.view,onClick:()=>this.setState({docView:k.view}),barActive:docViewS===k.view?k.bar:'#e7e9ec'}));
+
+    // 2.3 registration
+    const dkDocs=docs.filter(d=>d.key==='dk');
+    const regRow=(d)=>{ const v=vByPlate[d.plate]; const s=this.docStyleFor(d.stat); return {plate:d.plate,dept:v?v.dept:'',date:d.date,daysLabel:this.daysLabel(d.off),daysStyle:d.off<0?'color:#e5484d;font-weight:600':d.off<=30?'color:#b45309;font-weight:600':'',statusLabel:s.lbl,statusStyle:this.tagStyle(s.bg,s.c)}; };
+    const regExp=dkDocs.filter(d=>d.off<0), regSoon=dkDocs.filter(d=>d.off>=0&&d.off<=30), regMonth=dkDocs.filter(d=>d.off>=0&&d.off<=45), regNext=dkDocs.filter(d=>d.off>45&&d.off<=90);
+    const regKpis=[ mk('Hết đăng kiểm',regExp.length,'','Không được lưu thông','x-circle','red'), mk('Đến hạn (30 ngày)',regSoon.length,'','Cần đặt lịch ngay','warning','orange'), mk('Chưa đăng kiểm trong tháng',regMonth.length,'','Kế hoạch tháng này','calendar-check','blue') ];
+    const regTrack=[...regMonth].sort((a,b)=>a.off-b.off).map(regRow), regSoonList=[...regSoon].sort((a,b)=>a.off-b.off).map(regRow), regNextList=[...regNext].sort((a,b)=>a.off-b.off).map(regRow), regExpList=[...regExp].sort((a,b)=>a.off-b.off).map(regRow);
+
+    // Repair cost joins
+    const costByDeptArr=groupSum(repFleet,r=>{const v=vByPlate[r[1]];return v?v.dept:'Khác';},r=>r[5]);
+    const costByBrandArr=groupSum(repFleet,r=>{const v=vByPlate[r[1]];return v?v.brand:'Khác';},r=>r[5]);
+    const costByGaraArr=groupSum(repFleet,r=>r[4],r=>r[5]);
+    const costByDeptBars=barsHtml(costByDeptArr.map(g=>({label:g[0],disp:this.fmtM(g[1])+' tr',raw:g[1]})),'#3b82f6');
+    const costByGaraBars=barsHtml(costByGaraArr.map(g=>({label:g[0],disp:this.fmtM(g[1])+' tr',raw:g[1]})),'#0088b0');
+    const brandColors=['#3b82f6','#16a34a','#f59e0b','#7c5cfc','#e5484d','#0088b0','#d6006c'];
+    const costByBrandDonut=this.donutSeg(costByBrandArr.map((g,i)=>({value:g[1],color:brandColors[i%brandColors.length]})));
+    const costByBrandLegend=costByBrandArr.map((g,i)=>({label:g[0],color:brandColors[i%brandColors.length],value:this.fmtM(g[1])+' tr'}));
+    const catAgg={}; repFleet.forEach(r=>{catAgg[r[2]]=catAgg[r[2]]||{c:0,cost:0}; catAgg[r[2]].c++; catAgg[r[2]].cost+=r[5];});
+    const catMaxCost=Math.max.apply(null,Object.values(catAgg).map(x=>x.cost).concat([1]));
+    const catFreq=Object.entries(catAgg).sort((a,b)=>b[1].cost-a[1].cost).map(([k,v])=>({label:k,count:v.c,cost:this.fmtM(v.cost)+' tr',pct:Math.round(v.cost/catMaxCost*100)+'%'}));
+    const costByVehAll={}, freqByVeh={}; repFleet.forEach(r=>{costByVehAll[r[1]]=(costByVehAll[r[1]]||0)+r[5]; freqByVeh[r[1]]=(freqByVeh[r[1]]||0)+1;});
+    const topScCost=Object.entries(costByVehAll).sort((a,b)=>b[1]-a[1]).map(([p,c],i)=>({rank:i+1,plate:p,dept:(vByPlate[p]||{}).dept||'',count:freqByVeh[p],value:this.fmtVnd(c)}));
+    const topScFreq=Object.entries(freqByVeh).sort((a,b)=>b[1]-a[1]).map(([p,c],i)=>({rank:i+1,plate:p,dept:(vByPlate[p]||{}).dept||'',count:c,value:this.fmtVnd(costByVehAll[p])}));
+
+    // 3.0 overview
+    const bdTotalM=this.opCostBase.reduce((a,r)=>a+r[0],0)*ratio, scTotalM=this.opCostBase.reduce((a,r)=>a+r[1],0)*ratio, lopTotalM=this.opCostBase.reduce((a,r)=>a+r[2],0)*ratio, aqTotalM=this.opCostBase.reduce((a,r)=>a+r[3],0)*ratio;
+    const bdCountY=Math.round(46*ratio), scCountY=Math.round(this.rawRepairs.length*ratio*2);
+    const maintOvKpis=[
+      mk('Lượt bảo dưỡng',bdCountY,'','Lũy kế năm','wrench','blue'),
+      mk('Lượt sửa chữa',scCountY,'','Lũy kế năm','hammer','red'),
+      mk('Chi phí bảo dưỡng',this.fmtNum(bdTotalM),'tr','Năm nay','currency-circle-dollar','blue','19px'),
+      mk('Chi phí sửa chữa',this.fmtNum(scTotalM),'tr','Năm nay','currency-circle-dollar','red','19px'),
+      mk('Chi phí ắc quy',this.fmtNum(aqTotalM),'tr','Năm nay','battery-full','purple','21px'),
+      mk('Chi phí lốp xe',this.fmtNum(lopTotalM),'tr','Năm nay','tire','orange','21px'),
+      mk('Đến kỳ bảo dưỡng',dueCnt,'','Cần lên lịch','hourglass-medium','orange'),
+      mk('Trễ kỳ (chưa đi)',overdueCnt,'','Quá định mức','warning-octagon','red'),
+      mk('Bảo dưỡng quá hạn',overdueCnt,'','Cần xử lý ngay','x-circle','red'),
+      mk('Đang nằm xưởng',cnt.maint+cnt.repair,'','Bảo dưỡng/sửa chữa','garage','blue'),
+    ];
+    const nccList=this.nccRaw.map(r=>({name:r[0],type:r[1],phone:r[2],rating:r[3]}));
+    const stationList=this.stationRaw.map(r=>({name:r[0],loc:r[1],hours:r[2],phone:r[3]}));
+
+    // 3.1 maint-track
+    const maintDone=Math.round(38*ratio), onTimeAcc=Math.round(29*ratio), earlyAcc=Math.round(5*ratio), lateAcc=Math.round(4*ratio);
+    const totAcc=Math.max(1,onTimeAcc+earlyAcc+lateAcc);
+    const complianceDonut=this.donutSeg([{value:onTimeAcc,color:'#16a34a'},{value:earlyAcc,color:'#3b82f6'},{value:lateAcc,color:'#e5484d'}]);
+    const complianceLegend=[{label:'Đúng hạn',color:'#16a34a',value:onTimeAcc},{label:'Làm sớm',color:'#3b82f6',value:earlyAcc},{label:'Trễ hạn',color:'#e5484d',value:lateAcc}];
+    const maintTrackKpis=[
+      mk('Tổng lượt bảo dưỡng',maintDone,'','Lũy kế năm nay','wrench','blue'),
+      mk('Tổng chi phí bảo dưỡng',this.fmtNum(bdTotalM),'tr','Lũy kế năm','currency-circle-dollar','blue','19px'),
+      mk('Đúng hạn (lũy kế)',onTimeAcc,'',Math.round(onTimeAcc/totAcc*100)+'% tổng lượt','check-circle','green'),
+      mk('Làm sớm (lũy kế)',earlyAcc,'',Math.round(earlyAcc/totAcc*100)+'% tổng lượt','clock-countdown','blue'),
+      mk('Trễ hạn (lũy kế)',lateAcc,'',Math.round(lateAcc/totAcc*100)+'% tổng lượt','warning-octagon','red'),
+      mk('Đến kỳ bảo dưỡng',dueCnt,'','Trong 30 ngày','hourglass-medium','orange'),
+      mk('Trễ kỳ bảo dưỡng',overdueCnt,'','Quá định mức','x-circle','red'),
+      mk('Chưa đến kỳ',upcomingCnt,'','Còn trong định mức','calendar-blank','green'),
+      mk('Chi phí BD TB/xe',this.fmtNum(bdTotalM/Math.max(1,maintDone)),'tr','Trung bình','divide','blue','19px'),
+      mk('Thời gian BD TB','6,5','giờ','Mỗi lượt','timer','purple'),
+    ];
+    const onTimeTrendBars=this.bars(this.opMonths.map((m,i)=>({m,v:80+((i*7)%16)})),'#16a34a','%');
+    const maintCountBars=this.bars(this.opMonths.map((m,i)=>({m,v:Math.round((3+(i%4))*ratio)})),'#3b82f6','xe');
+    const bdCostBars=this.bars(this.opMonths.map((m,i)=>({m,v:Math.round(this.opCostBase[i][0]*ratio)})),'#3b82f6','tr');
+    const devByDept=barsHtml(groupSum(vehs,v=>v.dept).map(g=>({label:g[0],disp:(g[1]%2?'sớm ':'trễ ')+(1+g[1])+' ngày',raw:1+g[1]})),'#f59e0b');
+    const devByBrand=barsHtml(groupSum(vehs,v=>v.brand).map(g=>({label:g[0],disp:(g[1]%2?'sớm ':'trễ ')+(1+g[1])+' ngày',raw:1+g[1]})),'#7c5cfc');
+    const topLateAll=schFleet.filter(s=>s[5]==='overdue').concat(schFleet.filter(s=>s[5]==='due')).map(s=>({plate:s[0],dept:(vByPlate[s[0]]||{}).dept||'',item:s[1],odo:s[2],due:this.addDays(s[4]),tag:s[5]==='overdue'?'Trễ hạn':'Đến kỳ',tagStyle:this.tagStyle(s[5]==='overdue'?'var(--color-accent-2-100)':'#f9ecc4',s[5]==='overdue'?'var(--color-accent-2-800)':'#6b5200')}));
+    const topEarlyAll=schFleet.filter(s=>s[5]==='upcoming').map(s=>({plate:s[0],dept:(vByPlate[s[0]]||{}).dept||'',item:s[1],odo:s[2],due:this.addDays(s[4]),tag:'Chưa tới',tagStyle:this.tagStyle('var(--color-accent-100)','var(--color-accent-800)')}));
+    const expandLate=!!this.state.expandLate, expandEarly=!!this.state.expandEarly;
+    const topLate=expandLate?topLateAll:topLateAll.slice(0,10); const topEarly=expandEarly?topEarlyAll:topEarlyAll.slice(0,10);
+    const maintPlan=schFleet.filter(s=>s[5]!=='upcoming').map(s=>({plate:s[0],dept:(vByPlate[s[0]]||{}).dept||'',item:s[1],odoNow:s[2],odoNext:s[3],due:this.addDays(s[4]),tag:s[5]==='overdue'?'Trễ hạn':'Đến kỳ',tagStyle:this.tagStyle(s[5]==='overdue'?'var(--color-accent-2-100)':'#f9ecc4',s[5]==='overdue'?'var(--color-accent-2-800)':'#6b5200')}));
+
+    // 3.2 repair-track
+    const repVehCount=Object.keys(freqByVeh).length;
+    const scByDeptBars=costByDeptBars, scByBrandBars=barsHtml(costByBrandArr.map(g=>({label:g[0],disp:this.fmtM(g[1])+' tr',raw:g[1]})),'#e5484d');
+    const scCountBars=this.bars(this.opMonths.map((m,i)=>({m,v:Math.round((2+(i%3))*ratio)})),'#e5484d','xe');
+    const scTrendBars=this.bars(this.opMonths.map((m,i)=>({m,v:Math.round(this.opCostBase[i][1]*ratio)})),'#e5484d','tr');
+    const repairTrackKpis=[
+      mk('Tổng số xe sửa chữa',repVehCount,'',Math.round(repVehCount/Math.max(1,vehsAll.length)*100)+'% đội xe','hammer','red'),
+      mk('Tổng chi phí sửa chữa',this.fmtNum(scTotalM),'tr','Lũy kế năm','currency-circle-dollar','red','19px'),
+      mk('Xe đang nằm gara',cnt.repair,'',Math.round(cnt.repair/Math.max(1,vehsAll.length)*100)+'% đội xe','garage','orange'),
+      mk('Sửa chữa > 5 ngày',cnt.repair,'','Kéo dài','clock-afternoon','red'),
+      mk('Chi phí SC TB/xe',this.fmtNum(scTotalM/Math.max(1,repVehCount)),'tr','Trung bình','divide','blue','19px'),
+      mk('Thời gian SC TB','3,2','ngày','Mỗi lượt','timer','purple'),
+    ];
+    const expandTopCost=!!this.state.expandTopCost, expandTopFreq=!!this.state.expandTopFreq;
+    const topCostList=expandTopCost?topScCost:topScCost.slice(0,10); const topFreqList=expandTopFreq?topScFreq:topScFreq.slice(0,10);
+
+    // 3.3 ticket
+    const ticketPlate=this.state.ticketPlate||''; const ticketVeh=vByPlate[ticketPlate]||null;
+
+    // 3.4 roadside
+    const rsAll=this.roadsideRaw.filter(r=>fleetPlates.has(r[1]));
+    const rsRows=rsAll.map(r=>({date:r[0],plate:r[1],dept:(vByPlate[r[1]]||{}).dept||'',item:r[2],loc:r[3],cost:this.fmtVnd(r[4])}));
+    const rsTotal=rsAll.reduce((a,r)=>a+r[4],0);
+    const rsItemAgg=groupSum(rsAll,r=>r[2],r=>r[4]);
+    const rsByItem=barsHtml(rsItemAgg.map(g=>({label:g[0],disp:this.fmtVnd(g[1]),raw:g[1]})),'#0088b0');
+    const rsKpis=[
+      mk('Tổng lượt xử lý',rsAll.length,'','Sự cố dọc đường','traffic-cone','orange'),
+      mk('Tổng chi phí',this.fmtVnd(rsTotal),'','Lũy kế','currency-circle-dollar','red','16px'),
+      mk('Chi phí TB/lượt',this.fmtVnd(rsAll.length?Math.round(rsTotal/rsAll.length):0),'','Trung bình','divide','blue','16px'),
+      mk('Hạng mục nhiều nhất',rsItemAgg.length?rsItemAgg[0][0]:'—','','Theo chi phí','wrench','purple','14px'),
+    ];
+
+    // ═══ HEALTH SCORE (fleet) ═══
+    const scored=vehs.map(v=>{ const hs=this.hscore(v); const b=this.hband(hs.score); return {...v,score:hs.score,parts:hs.parts,band:b.label,bandColor:b.color,bandBg:b.bg}; });
+    const scoredSort=[...scored].sort((a,b)=>b.score-a.score);
+    const avgScore=scored.length?Math.round(scored.reduce((a,v)=>a+v.score,0)/scored.length):0;
+    const scoreBands={excellent:scored.filter(v=>v.score>=85).length,good:scored.filter(v=>v.score>=70&&v.score<85).length,warning:scored.filter(v=>v.score>=50&&v.score<70).length,critical:scored.filter(v=>v.score<50).length};
+    const fleetGauge=this.gauge(avgScore);
+    const scoreDonut=this.donutSeg([{value:scoreBands.excellent,color:'#16a34a'},{value:scoreBands.good,color:'#3b82f6'},{value:scoreBands.warning,color:'#f59e0b'},{value:scoreBands.critical,color:'#e5484d'}]);
+    const scoreLegend=[{label:'Xuất sắc (≥85)',color:'#16a34a',value:scoreBands.excellent},{label:'Tốt (70–84)',color:'#3b82f6',value:scoreBands.good},{label:'Cảnh báo (50–69)',color:'#f59e0b',value:scoreBands.warning},{label:'Nguy cấp (<50)',color:'#e5484d',value:scoreBands.critical}];
+
+    // ═══ D4 PERFORMANCE (enhanced) ═══
+    const perfKpis2=[
+      mk('Km trung bình/tháng',this.fmtInt(Math.round(kmMonthTotal/(vehs.length||1))),'km','Mỗi xe','path','blue','21px'),
+      mk('Chi phí / km',this.fmtInt(avgCostKm),'₫','Trung bình đội','currency-circle-dollar','purple','21px'),
+      mk('Uptime trung bình',avgUptime,'%','Tỷ lệ sẵn sàng','check-circle','green'),
+      mk('Điểm sức khỏe TB',avgScore,'/100','Toàn đội','heartbeat','orange'),
+    ];
+    const perfRankFull=scoredSort.map((v,i)=>{ const b=this.hband(v.score); return {rank:i+1,plate:v.plate,dept:v.dept,km:this.fmtInt(v.kmMonth),fuel:v.fuel.toLocaleString('vi-VN',{minimumFractionDigits:1}),uptime:v.uptime,costKm:this.fmtInt(v.costKm),score:v.score,band:b.label,bandStyle:this.tagStyle(b.bg,b.color),scoreColor:b.color}; });
+    const top20Good=perfRankFull.slice(0,Math.min(20,perfRankFull.length));
+    const top20Bad=[...perfRankFull].reverse().slice(0,Math.min(20,perfRankFull.length)).map((r,i)=>({...r,rank:i+1}));
+
+    // ═══ D5 PROFILE (CRM) ═══
+    const pv=selV; const pvHs=this.hscore(pv); const pvBand=this.hband(pvHs.score);
+    const pslides=['Mặt trước','Mặt bên trái','Mặt bên phải','Mặt sau','Khoang lái'];
+    const pSlideIdx=Math.min(this.state.profileSlide||0,pslides.length-1);
+    const profile={
+      plate:pv.plate, brandModel:pv.brandModel, type:pv.type, year:pv.year, dept:pv.dept, driver:pv.driver, gara:pv.gara,
+      statusLabel:this.statusMeta(pv.status).label, statusStyle:this.tagStyle(this.statusMeta(pv.status).bg,this.statusMeta(pv.status).c),
+      score:pvHs.score, band:pvBand.label, bandColor:pvBand.color, bandBg:pvBand.bg, gauge:this.gauge(pvHs.score),
+      slides:pslides.map((l,i)=>({label:l,idx:i,active:i===pSlideIdx,go:()=>this.setState({profileSlide:i}),dot:i===pSlideIdx?'#3b82f6':'#cbd2dd',borderColor:i===pSlideIdx?'#3b82f6':'#e0e3e8'})),
+      curSlide:pslides[pSlideIdx], slideNo:(pSlideIdx+1),
+      specs:[{k:'Hãng sản xuất',v:pv.brand},{k:'Model',v:pv.model},{k:'Tải trọng',v:pv.type},{k:'Năm sản xuất',v:pv.year},{k:'Số ODO',v:this.fmtInt(pv.odo)+' km'},{k:'Bộ phận',v:pv.dept},{k:'Tài xế',v:pv.driver},{k:'Gara phụ trách',v:pv.gara}],
+      scoreRows:[
+        {k:'Tuân thủ bảo dưỡng',w:'40%',v:Math.round(pvHs.parts.comp)},
+        {k:'Tần suất sửa chữa',w:'20%',v:Math.round(pvHs.parts.freq)},
+        {k:'Chi phí / km',w:'15%',v:Math.round(pvHs.parts.costKm)},
+        {k:'Downtime tại gara',w:'10%',v:Math.round(pvHs.parts.dtGara)},
+        {k:'Downtime nằm bãi',w:'5%',v:Math.round(pvHs.parts.dtBai)},
+        {k:'Uptime vận hành',w:'10%',v:Math.round(pvHs.parts.uptime)},
+      ],
+      docImgs:['Đăng ký xe','Đăng kiểm','Phí đường bộ','BH dân sự','BH vật chất','Phù hiệu','Sổ bảo dưỡng'],
+      metrics:[{label:'Km/tháng',value:this.fmtInt(pv.kmMonth),unit:'km'},{label:'Tiêu hao',value:pv.fuel.toLocaleString('vi-VN',{minimumFractionDigits:1}),unit:'L'},{label:'Uptime',value:pv.uptime,unit:'%'},{label:'Chi phí/km',value:this.fmtInt(pv.costKm),unit:'₫'}],
+    };
+    const pvRepairs=this.rawRepairs.filter(r=>r[1]===pv.plate);
+    const pvSched=this.rawSched.filter(s=>s[0]===pv.plate);
+    const pvRoad=this.roadsideRaw.filter(r=>r[1]===pv.plate);
+    const tlColor=(c)=>({'Động cơ':'#e5484d','Hộp số':'#e5484d','Phanh':'#f59e0b','Lốp':'#7c5cfc','Điện':'#3b82f6','Điều hòa':'#0088b0','Thân vỏ':'#16a34a'})[c]||'#3b82f6';
+    let timeline=pvRepairs.map(r=>({date:r[0],type:r[2],title:r[2]+' · '+r[3],meta:r[4],cost:this.fmtVnd(r[5]),color:tlColor(r[2]),icon:'wrench'}));
+    timeline=timeline.concat(pvRoad.map(r=>({date:r[0],type:'Dọc đường',title:'Dọc đường · '+r[2],meta:r[3],cost:this.fmtVnd(r[4]),color:'#f59e0b',icon:'traffic-cone'})));
+    timeline.sort((a,b)=>{const pa=a.date.split('/'),pb=b.date.split('/');return new Date(pb[2],pb[1]-1,pb[0])-new Date(pa[2],pa[1]-1,pa[0]);});
+    const profileTimeline=timeline; const profileNoHistory=timeline.length===0;
+    const pvTotalCost=pvRepairs.reduce((a,r)=>a+r[5],0)+pvRoad.reduce((a,r)=>a+r[4],0);
+
+    // ═══ D6 REPORTS ═══
+    const reportKind=this.state.reportKind||'week';
+    const weekLabels=['Tuần 24','Tuần 25','Tuần 26','Tuần 27','Tuần 28'];
+    const weekKm=[38,42,40,45,37].map(x=>Math.round(x*ratio));
+    const weekCost=[9.2,11.5,8.7,13.1,10.4].map(x=>+(x*ratio).toFixed(1));
+    const monthLabels=['Th4','Th5','Th6','Th7'];
+    const monthKm=[232,247,219,205].map(x=>Math.round(x*ratio));
+    const monthCost=[54,60,50,45].map(x=>Math.round(x*ratio));
+    const isWeek=reportKind==='week';
+    const rpLabels=isWeek?weekLabels:monthLabels;
+    const rpKmBars=this.bars(rpLabels.map((m,i)=>({m,v:isWeek?weekKm[i]:monthKm[i]})),'#3b82f6','k');
+    const rpCostBars=this.bars(rpLabels.map((m,i)=>({m,v:isWeek?weekCost[i]:monthCost[i]})),'#e5484d',isWeek?'tỷ':'tr');
+    const rpKpis=[
+      {label:'Tổng km',value:this.fmtInt((isWeek?weekKm:monthKm).reduce((a,b)=>a+b,0))+' km'},
+      {label:'Lượt bảo dưỡng',value:Math.round((isWeek?9:34)*ratio)},
+      {label:'Lượt sửa chữa',value:Math.round((isWeek?5:18)*ratio)},
+      {label:'Tổng chi phí',value:this.fmtNum((isWeek?weekCost:monthCost).reduce((a,b)=>a+b,0)*(isWeek?1000:1))+(isWeek?' tr':' tr')},
+      {label:'Uptime TB',value:avgUptime+'%'},
+      {label:'Điểm sức khỏe',value:avgScore+'/100'},
+    ];
+    const rpRows=vehs.map(v=>{ const m=this.statusMeta(v.status); const f=isWeek?0.25:1; return {plate:v.plate,dept:v.dept,km:this.fmtInt(Math.round(v.kmMonth*f)),cost:this.fmtM((costByVehAll[v.plate]||0)*f)+' tr',statusLabel:m.label,statusStyle:this.tagStyle(m.bg,m.c)}; });
+    const reportKindOpts=[{k:'week',l:'Báo cáo tuần'},{k:'month',l:'Báo cáo tháng'}].map(o=>({label:o.l,active:reportKind===o.k,segStyle:reportKind===o.k?'background:var(--color-accent);color:var(--color-bg)':'',onClick:()=>this.setState({reportKind:o.k})}));
+
+    // ═══ D7 AI (enhanced) ═══
+    const highCost=scoredSort.filter(v=>v.costKm>avgCostKm).slice(0,3).map(v=>({plate:v.plate,reason:`Chi phí/km ${this.fmtInt(v.costKm)}₫ cao hơn TB đội ${Math.round((v.costKm/avgCostKm-1)*100)}%. Nguyên nhân chính: ${v.status==='repair'?'đang sửa chữa lớn':'tiêu hao nhiên liệu & tuổi xe cao'}.`}));
+    const riskVehicles=scoredSort.filter(v=>v.score<70).slice(0,4).map(v=>{ const b=this.hband(v.score); return {plate:v.plate,score:v.score,band:b.label,bandStyle:this.tagStyle(b.bg,b.color),risk:v.score<50?'Cao':'Trung bình',riskStyle:this.tagStyle(v.score<50?'#fee2e2':'#fef3c7',v.score<50?'#b91c1c':'#92400e'),reason:v.status==='repair'?'Đang phát sinh hư hỏng lớn':v.fuel>32?'Tiêu hao nhiên liệu bất thường':'Sắp đến mốc bảo dưỡng & odo cao'}; });
+    const aiRecs=[
+      {icon:'gauge',title:'Tối ưu chi phí',body:`Gom lịch bảo dưỡng ${dueCnt} xe đến kỳ trong cùng đợt để giảm 12–15% chi phí công & thời gian nằm xưởng.`},
+      {icon:'trend-up',title:'Tăng uptime',body:`Ưu tiên xử lý ${overdueCnt} xe trễ bảo dưỡng và ${cnt.repair} xe đang nằm gara để nâng uptime đội lên mục tiêu ≥ 92%.`},
+      {icon:'shield-check',title:'Giảm rủi ro',body:`${riskVehicles.length} xe có điểm sức khỏe < 70. Đặt lịch kiểm tra chuyên sâu trong 15 ngày tới.`},
+    ];
+    const aiSummary=`Đội xe hiện có ${vehs.length} phương tiện, ${cnt.active} đang hoạt động (${Math.round(cnt.active/(vehs.length||1)*100)}%). Điểm sức khỏe trung bình ${avgScore}/100 (${this.hband(avgScore).label}). Có ${dkExp} xe hết đăng kiểm, ${overdueCnt} xe trễ bảo dưỡng và ${cnt.repair} xe đang nằm gara cần xử lý ưu tiên. Chi phí sửa chữa tháng ${this.fmtNum(monthCostVnd/1e6)} triệu ₫, ${monthCostVnd>weekCostVnd*4.3?'nhỉnh hơn':'thấp hơn'} mức trung bình tuần.`;
+
+    // ═══ NOTIFICATIONS ═══
+    const notifs=[
+      {sev:'red',dot:'#e5484d',icon:'seal-warning',title:'Đăng kiểm quá hạn',body:'29H-556.10 · quá hạn 12 ngày',time:'2 giờ trước'},
+      {sev:'red',dot:'#e5484d',icon:'wrench',title:'Bảo dưỡng quá hạn',body:'29H-556.10 · vượt mốc 15.000km',time:'2 giờ trước'},
+      {sev:'red',dot:'#e5484d',icon:'shield-warning',title:'Hết bảo hiểm TNDS',body:'51C-901.33 · hết hạn 5 ngày',time:'5 giờ trước'},
+      {sev:'yellow',dot:'#f59e0b',icon:'shield-check',title:'Sắp hết bảo hiểm',body:'51D-088.21 · còn 15 ngày',time:'Hôm qua'},
+      {sev:'yellow',dot:'#f59e0b',icon:'gas-pump',title:'Tiêu hao bất thường',body:'51D-509.44 · +12% so TB đội',time:'Hôm qua'},
+      {sev:'green',dot:'#16a34a',icon:'garage',title:'Xe đang nằm gara',body:'51C-845.90 · hộp số · dự kiến 3 ngày',time:'2 ngày trước'},
+    ];
+    const notifCount=notifs.filter(n=>n.sev==='red').length;
+
+    // ═══ DRILL-DOWN ═══
+    const drill=this.state.drill;
+    const drillDefs={
+      total:{title:'Tất cả phương tiện',rows:vehs},
+      active:{title:'Xe đang hoạt động',rows:vehs.filter(v=>v.status==='active')},
+      inactive:{title:'Xe ngừng hoạt động',rows:vehs.filter(v=>v.status!=='active')},
+      due:{title:'Xe đến kỳ bảo dưỡng',rows:vehs.filter(v=>schFleet.some(s=>s[0]===v.plate&&s[5]==='due'))},
+      overdue:{title:'Xe trễ bảo dưỡng',rows:vehs.filter(v=>schFleet.some(s=>s[0]===v.plate&&s[5]==='overdue'))},
+      dk:{title:'Xe hết hạn đăng kiểm',rows:vehs.filter(v=>this.dkOff[v.idx]<0)},
+      bh:{title:'Xe hết/sắp hết bảo hiểm',rows:vehs.filter(v=>this.bhOff[v.idx]<=30)},
+    };
+    const drillOpen=!!drill&&!!drillDefs[drill];
+    const drillTitle=drillOpen?drillDefs[drill].title:'';
+    const drillRows=drillOpen?drillDefs[drill].rows.map(v=>{const m=this.statusMeta(v.status);return {plate:v.plate,brandModel:v.brandModel,dept:v.dept,odo:this.fmtInt(v.odo),statusLabel:m.label,statusStyle:this.tagStyle(m.bg,m.c),open:()=>this.setState({drill:null,screen:'vehicle-detail',selected:v.plate})};}):[];
+    const kpiDrillKeys=['total','active','inactive','due','overdue','dk','bh',null,null,null];
+
+    // ═══ SPARKLINES + %CHANGE for overview KPIs ═══
+    const sparkData=[[12,13,13,14,14,14],[9,8,9,8,8,8],[3,4,5,6,6,6],[2,3,3,4,4,4],[1,1,2,2,1,1],[0,1,1,1,1,1],[1,1,2,2,2,2],[6,7,6,8,7,7],[52,61,47,73,58,68],[198,221,214,243,236,205]];
+    const kpiDeltas=['+0%','−11%','+20%','+33%','±0%','+0%','+100%','−4%','+17%','+3%'];
+    const kpiColors2=['#3b82f6','#16a34a','#e5484d','#f59e0b','#e5484d','#e5484d','#f59e0b','#3b82f6','#7c5cfc','#16a34a'];
+    const kpiBoard2=kpiBoard.map((k,i)=>{ const up=(kpiDeltas[i]||'').startsWith('+'); const clk=!!kpiDrillKeys[i]; return {...k,spark:this.spark(sparkData[i]||[1,2,3],kpiColors2[i]||'#3b82f6'),delta:kpiDeltas[i]||'',deltaColor:up?'#e5484d':'#16a34a',drillKey:kpiDrillKeys[i],onDrill:kpiDrillKeys[i]?()=>this.openDrill(kpiDrillKeys[i]):null,clickable:clk,cursor:clk?'pointer':'default',titleText:clk?'Bấm để xem danh sách xe':'',hoverStyle:clk?'border-color:#c3ccdb;box-shadow:0 3px 10px rgba(22,30,50,.09)':''}; });
+
+    // ═══ PLATE LOOKUP ═══
+    const lookupPlate=this.state.lookupPlate; const lv=vByPlate[lookupPlate];
+    let lookup=null;
+    if(lv){ const lhs=this.hscore(lv); const lb=this.hband(lhs.score); const lm=this.statusMeta(lv.status);
+      const lRepairs=this.rawRepairs.filter(r=>r[1]===lv.plate); const lRoad=this.roadsideRaw.filter(r=>r[1]===lv.plate);
+      let tl=lRepairs.map(r=>({date:r[0],title:r[2]+' · '+r[3],meta:r[4],cost:this.fmtVnd(r[5]),color:tlColor(r[2]),icon:'wrench'}));
+      tl=tl.concat(lRoad.map(r=>({date:r[0],title:'Dọc đường · '+r[2],meta:r[3],cost:this.fmtVnd(r[4]),color:'#f59e0b',icon:'traffic-cone'})));
+      tl.sort((a,b)=>{const pa=a.date.split('/'),pb=b.date.split('/');return new Date(pb[2],pb[1]-1,pb[0])-new Date(pa[2],pa[1]-1,pa[0]);});
+      const dkc=this.dkOff[lv.idx],bhc=this.bhOff[lv.idx],phc=this.phOff[lv.idx];
+      lookup={ plate:lv.plate,brandModel:lv.brandModel,type:lv.type,year:lv.year,dept:lv.dept,driver:lv.driver,odo:this.fmtInt(lv.odo)+' km',
+        statusLabel:lm.label,statusStyle:this.tagStyle(lm.bg,lm.c),score:lhs.score,band:lb.label,bandColor:lb.color,bandBg:lb.bg,
+        docs:[{k:'Đăng kiểm',off:dkc},{k:'Bảo hiểm TNDS',off:bhc},{k:'Phù hiệu',off:phc}].map(d=>{const s=this.docStyleFor(this.docStat(d.off));return {k:d.k,date:this.addDays(d.off),daysLabel:this.daysLabel(d.off),statusLabel:s.lbl,statusStyle:this.tagStyle(s.bg,s.c)};}),
+        timeline:tl, noHistory:tl.length===0 }; }
+    const lookupNotFound=!lv;
+
+    // ═══ COMPARE (grouped) ═══
+    const cmpMode=this.state.cmpMode||'all';
+    const cmpModeOpts=[{k:'all',l:'Tất cả'},{k:'brand',l:'Cùng hãng'},{k:'weight',l:'Cùng tải trọng'},{k:'year',l:'Cùng đời'},{k:'dept',l:'Cùng bộ phận'}].map(o=>({label:o.l,active:cmpMode===o.k,segStyle:cmpMode===o.k?'background:var(--color-accent);color:var(--color-bg)':'',onClick:()=>this.setState({cmpMode:o.k})}));
+    const cmpBaseV=vByPlate[(this.state.compareSel||[])[0]]||scoredSort[0];
+    let cmpPool=vehsAll;
+    if(cmpMode==='brand') cmpPool=vehsAll.filter(v=>v.brand===cmpBaseV.brand);
+    else if(cmpMode==='weight') cmpPool=vehsAll.filter(v=>v.wbucket===cmpBaseV.wbucket);
+    else if(cmpMode==='year') cmpPool=vehsAll.filter(v=>v.year===cmpBaseV.year);
+    else if(cmpMode==='dept') cmpPool=vehsAll.filter(v=>v.dept===cmpBaseV.dept);
+    const cmpRank=(fn,desc)=>{ const arr=cmpPool.map(v=>({v,val:fn(v)})).sort((a,b)=>desc?b.val-a.val:a.val-b.val).slice(0,20); return arr.map((x,i)=>({rank:i+1,plate:x.v.plate,dept:x.v.dept,value:x.disp||x.val})); };
+    const cmpTopCost=cmpPool.map(v=>({v,c:costByVehAll[v.plate]||0})).sort((a,b)=>b.c-a.c).slice(0,20).map((x,i)=>({rank:i+1,plate:x.v.plate,dept:x.v.dept,value:this.fmtVnd(x.c)}));
+    const cmpTopFreq=cmpPool.map(v=>({v,c:freqByVeh[v.plate]||0})).sort((a,b)=>b.c-a.c).slice(0,20).map((x,i)=>({rank:i+1,plate:x.v.plate,dept:x.v.dept,value:(x.c||0)+' lần'}));
+    const cmpTopCostKm=[...cmpPool].sort((a,b)=>b.costKm-a.costKm).slice(0,20).map((v,i)=>({rank:i+1,plate:v.plate,dept:v.dept,value:this.fmtInt(v.costKm)+' ₫/km'}));
+    const cmpTopGara=[...cmpPool].sort((a,b)=>(b.status==='repair'?2:b.status==='maint'?1:0)-(a.status==='repair'?2:a.status==='maint'?1:0)).slice(0,20).map((v,i)=>({rank:i+1,plate:v.plate,dept:v.dept,value:(v.status==='repair'?'5 ngày':v.status==='maint'?'2 ngày':'0 ngày')}));
+
+    return {
+      nav, meta, today:'Thứ Năm · 16/07/2026', updated:this.state.updated||'09:42',
+      showPageHead:S!=='overview', kpiBoard:kpiBoard2, healthDonut, healthLegend, docDonut, docLegend, costBars, cmpCount:(this.state.compareSel||[]).length,
+      notifs, notifCount, notifOpen:this.state.notifOpen, onToggleNotif:()=>this.toggleNotif(), onOcr:()=>this.flash('Đang mở camera nhận diện biển số (OCR)…'), onVoice:()=>this.flash('Đang nghe… hãy đọc biển số xe'),
+      drillOpen, drillTitle, drillRows, closeDrill:()=>this.closeDrill(),
+      isHealthScore:S==='health-score', fleetGauge, avgScore, scoreDonut, scoreLegend, scoreBands, avgScoreBand:this.hband(avgScore).label, avgScoreColor:this.hband(avgScore).color, scoredSort:scoredSort.map((v,i)=>{const b=this.hband(v.score);return {rank:i+1,plate:v.plate,dept:v.dept,brandModel:v.brandModel,score:v.score,band:b.label,bandStyle:this.tagStyle(b.bg,b.color),scoreColor:b.color,comp:Math.round(v.parts.comp),freq:Math.round(v.parts.freq),costKm:Math.round(v.parts.costKm),open:()=>this.setState({screen:'vehicle-detail',selected:v.plate})};}),
+      perfKpis2, perfRankFull, top20Good, top20Bad,
+      profile, profileTimeline, profileNoHistory, pvTotalCostFmt:this.fmtVnd(pvTotalCost),
+      reportKindOpts, isWeek, rpKmBars, rpCostBars, rpKpis, rpRows, reportRangeLabel:isWeek?'5 tuần gần nhất':'4 tháng gần nhất',
+      highCost, riskVehicles, aiRecs, aiSummary,
+      isFleetCompare:S==='fleet-compare', cmpModeOpts, cmpBasePlate:cmpBaseV.plate, cmpPoolCount:cmpPool.length, cmpTopCost, cmpTopFreq, cmpTopCostKm, cmpTopGara,
+      isPlateLookup:S==='plate-lookup', lookup, lookupNotFound, lookupInput:this.state.lookupInput, onLookupInput:(e)=>this.setState({lookupInput:e.target.value}), onLookupGo:()=>{const q=(this.state.lookupInput||'').trim().toUpperCase(); const found=vehsAll.find(v=>v.plate.toUpperCase()===q||v.plate.replace(/[^0-9]/g,'').endsWith(q.replace(/[^0-9]/g,''))); if(found)this.setState({lookupPlate:found.plate}); else this.flash('Không tìm thấy biển số phù hợp');}, lookupPlates:vehsAll,
+      norm:this.state.norm,
+      onNormTire:(e)=>this.setState({norm:{...(this.state.norm),tire:e.target.value}}),
+      onNormBattery:(e)=>this.setState({norm:{...(this.state.norm),battery:e.target.value}}),
+      onNormService:(e)=>this.setState({norm:{...(this.state.norm),service:e.target.value}}),
+      onNormPart:(e)=>this.setState({norm:{...(this.state.norm),part:e.target.value}}),
+      onSaveSettings:()=>this.flash('Đã lưu cài đặt · áp dụng toàn hệ thống'),
+      weightOpts, statusOpts, onWeight:(e)=>this.setFilter('weight',e.target.value), onStatus:(e)=>this.setFilter('status',e.target.value),
+      quick:this.state.quick||'', onQuick:(e)=>this.setState({quick:e.target.value}), vehiclesAll:vehsAll,
+      f:F, deptOpts, brandOpts, yearOpts, garaOpts, hasFilters, fleetCount:vehs.length,
+      onDept:(e)=>this.setFilter('dept',e.target.value), onBrand:(e)=>this.setFilter('brand',e.target.value), onYear:(e)=>this.setFilter('year',e.target.value), onGara:(e)=>this.setFilter('gara',e.target.value), onFrom:(e)=>this.setFilter('from',e.target.value), onTo:(e)=>this.setFilter('to',e.target.value), onClear:()=>this.clearFilters(),
+      onRefresh:()=>this.refresh(), onImportBtn:()=>this.setState({ui:{...(this.state.ui||{}),import:true}}), onCompareBtn:()=>this.openCompare(), onExport:()=>this.exportExcel(),
+      ui:this.state.ui||{}, closeImport:()=>this.setState({ui:{...(this.state.ui||{}),import:false}}), closeCompare:()=>this.setState({ui:{...(this.state.ui||{}),compare:false}}), stop:(e)=>e.stopPropagation(), doImport:()=>{this.setState({ui:{...(this.state.ui||{}),import:false}});this.flash('Đã cập nhật dữ liệu từ file');}, compareChips, compareRows, hasCompare, toast:this.state.toast||'',
+      isOverview:S==='overview', isFleetOverview:S==='fleet-overview', isVehicleList:S==='vehicle-list', isDocs:S==='docs',
+      isMaintOverview:S==='maint-overview', isRepairLog:S==='repair-log', isMaintSchedule:S==='maint-schedule',
+      isRegistration:S==='registration', isMaintTrack:S==='maint-track', isRepairTrack:S==='repair-track', isMaintTicket:S==='maint-ticket', isRoadside:S==='roadside',
+      isPerformance:S==='performance', isVehicleDetail:S==='vehicle-detail', isReports:S==='reports', isAI:S==='ai', isSettings:S==='settings',
+      opBars, opLegend, odoBars,
+      byDept, byWeight, odoRank, kmTopList, odoTopList, ageTopList,
+      docTable, docKpisClick, docView:docViewS,
+      regKpis, regTrack, regSoonList, regNextList, regExpList,
+      maintOvKpis, costByDeptBars, costByGaraBars, costByBrandDonut, costByBrandLegend, catFreq, topScCost, topScFreq, nccList, stationList,
+      maintTrackKpis, complianceDonut, complianceLegend, onTimeTrendBars, maintCountBars, bdCostBars, devByDept, devByBrand, topLate, topEarly, maintPlan, expandLate, expandEarly, lateLabel:expandLate?'Thu gọn':'Xem tất cả', earlyLabel:expandEarly?'Thu gọn':'Xem tất cả', onToggleLate:()=>this.setState({expandLate:!expandLate}), onToggleEarly:()=>this.setState({expandEarly:!expandEarly}),
+      repairTrackKpis, scByDeptBars, scByBrandBars, scCountBars, scTrendBars, topCostList, topFreqList, expandTopCost, expandTopFreq, topCostLabel:expandTopCost?'Thu gọn':'Xem tất cả', topFreqLabel:expandTopFreq?'Thu gọn':'Xem tất cả', onToggleTopCost:()=>this.setState({expandTopCost:!expandTopCost}), onToggleTopFreq:()=>this.setState({expandTopFreq:!expandTopFreq}),
+      ticketPlate, onTicketPlate:(e)=>this.setState({ticketPlate:e.target.value}), ticketVeh, onExportPdf:()=>this.flash('Đang tạo phiếu bảo dưỡng PDF…'),
+      rsKpis, rsRows, rsByItem,
+      goAI:(e)=>{e.preventDefault();this.setState({screen:'ai'});},
+      ovKpis, ovAlerts, statusLegend, statusDonut:this.donut(vehs), kmTrend:this.area(kmData,'#0088b0','rgba(0,136,176,.12)'),
+      fleetKpis, byType, byBrand, ageDist,
+      vehFilters, filteredVehicles, vehCount:filteredVehicles.length, vehSearch:this.state.vehSearch, onSearch:(e)=>this.setState({vehSearch:e.target.value}), vehicles:vehsAll,
+      docKpis, docTypeFilters, filteredDocs,
+      maintKpis, costTrend:this.area(costData,'#d6006c','rgba(214,0,108,.10)'), costByCat,
+      repairs, repairTotal,
+      schedule,
+      perfKpis, fuelBars, uptimeBars, perfRank,
+      sel, onSelectVeh:(e)=>this.setState({selected:e.target.value}),
+      reportTypes, reportTitle, reportKpis, reportRows,
+      aiAlerts, aiPred,
+      docTogglesList,
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+# Chứa các thư mục không được phép đẩy lên Git (GitHub/GitLab)
+
+# 1. Thư viện rác của Frontend (Nặng và dễ lỗi)
+node_modules/
+dist/
+build/
+
+# 2. Thư viện rác của Python Backend
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.venv/
+
+# 3. File chứa mật khẩu / API Keys bảo mật (CỰC KỲ QUAN TRỌNG)
+.env
+.env.local
+.env.*
+# ...nhưng file MẪU (không chứa secret thật) thì vẫn phải commit để người sau biết cần khai báo
+# biến gì — nếu không sẽ vô tình bị 2 dòng ".env.*" ở trên chặn luôn.
+!.env.example
+
+# 4. Thư mục chứa video render sinh ra (Quá nặng)
+outputs/
+uploads/
+
+# 5. Rác của hệ điều hành
+.DS_Store
+Thumbs.db

@@ -1,0 +1,58 @@
+name: CI/CD Pipeline - Code Quality & Security
+
+# Tự động chạy mỗi khi có code push lên nhánh main hoặc tạo Pull Request
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  backend-checks:
+    name: Backend Code Review (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Cài đặt công cụ kiểm tra (Linters & Security)
+        run: |
+          pip install black isort flake8 bandit
+
+      - name: Kiểm tra Format (Black & Isort)
+        run: |
+          black --check backend/
+          isort --check-only backend/
+
+      - name: Linter - Quét lỗi cú pháp (Flake8)
+        run: |
+          flake8 backend/ --max-line-length=88
+
+      - name: Security Scanner - Quét lỗ hổng (Bandit)
+        run: |
+          bandit -r backend/ -ll
+
+  frontend-checks:
+    name: Frontend Code Review (React/JS)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Linter & Format (ESLint & Prettier)
+        # Sẽ chạy lệnh kiểm tra trong thư mục frontend
+        # Yêu cầu bạn đã cài eslint và prettier trong package.json
+        run: |
+          cd frontend
+          npm install
+          npm run lint || echo "Vui lòng cấu hình npm run lint trong package.json của frontend"

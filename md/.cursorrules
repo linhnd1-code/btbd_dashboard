@@ -1,0 +1,9 @@
+# ĐÂY LÀ ĐIỂM NEO DÀNH CHO CÁC TRÌNH DUYỆT CODE AI NHƯ CURSOR HOẶC WINDSURF
+# Khi AI mở dự án này lên, nó sẽ đọc file này đầu tiên.
+
+Instruction: 
+You are an advanced AI assistant working on this internal company framework.
+BEFORE writing, editing, or suggesting any code, you MUST read the `CLAUDE.md` file and all Markdown files inside the `rules/` directory (such as `core_principles.md`, `coding_style.md`). 
+Adhere strictly to the guidelines and context provided in those documents. Do not break the architecture.
+
+CRITICAL WORKFLOW RULE: You MUST check the `ROADMAP.md` file before starting any task. You are strictly forbidden from skipping phases. You must complete tasks sequentially as defined by the empty checkboxes `[ ]` in the Roadmap. Update the checkbox to `[x]` upon completion.

@@ -1,0 +1,38 @@
+# Gitignore gốc cho toàn bộ dự án (áp dụng cho mọi thư mục con: md/backend, md/frontend...)
+
+# 1. Thư viện rác của Frontend (Nặng và dễ lỗi)
+node_modules/
+dist/
+build/
+
+# 2. Thư viện rác của Python Backend
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.venv/
+
+# 3. File chứa mật khẩu / API Keys bảo mật (CỰC KỲ QUAN TRỌNG)
+.env
+.env.local
+.env.*
+# ...nhưng file MẪU (không chứa secret thật, chỉ có placeholder) thì vẫn phải commit để người
+# sau biết cần khai báo biến gì — nếu không sẽ vô tình bị 2 dòng ".env.*" ở trên chặn luôn.
+!.env.example
+
+# 4. Thư mục chứa video render / ảnh upload sinh ra (không phải source code)
+outputs/
+uploads/
+
+# 5. Database + log cục bộ — dữ liệu chạy thật, không phải source code, đồng bộ lại được từ
+# Google Sheet (xem backend/services/sheet_sync.py) nên không cần versioning.
+*.db
+*.db-journal
+*.db.*
+*.sqlite3
+*.log
+
+# 6. Rác của hệ điều hành
+.DS_Store
+Thumbs.db
